@@ -69,6 +69,9 @@ body {
 .container {
     padding: 25px;
 }
+.container > div {
+    margin-bottom: 25px;
+}
 .terminal {
     background-color: #212121;
     color: #f2f2f2;
@@ -1686,6 +1689,7 @@ function rangeSlider({page, name = 'range-slider', info, range, label}, protocol
     let input = ui_input(label)
     let fill = bel`<span class=${css.fill}></span>`
     let bar = bel`<span class=${css.bar}>${fill}</span>`
+    let sliderRange = ui_range_selector_input()
     
     const el = bel`
     <div class=${css['range-slider']}>
@@ -1696,7 +1700,7 @@ function rangeSlider({page, name = 'range-slider', info, range, label}, protocol
         </div>
         <div class=${css['slider-container']}>
             ${bar}
-            ${ui_range_selector_input()}
+            ${sliderRange}
         </div>
     </div>`
     return el
@@ -1709,12 +1713,15 @@ function rangeSlider({page, name = 'range-slider', info, range, label}, protocol
         /***
         // todo: make an array list for percentage(%) using 
         ***/
-        setBar(target.value)
-        if ( name === 'cpu') { var value = `${target.value}%` } 
-        else { var value = `${target.value} MB` }
-        input.value = value
-        
-        send2Parent({page, from: name, flow: widget, type: 'select', body: value, filename, line: 27 })
+       let text
+       let val = target.value
+        sliderRange.value = val
+        setBar(val)
+
+        name === 'cpu' ?  text = `${val}%`  : text = `${val} MB` 
+        input.value = text
+
+        send2Parent({page, from: name, flow: widget, type: 'select', body: text, filename, line: 27 })
     }
 
     function ui_label () {
@@ -1722,16 +1729,17 @@ function rangeSlider({page, name = 'range-slider', info, range, label}, protocol
     }
 
     function ui_input () {
-        return bel`<input class=${css['field-input']} type='text' aria-live="true" aria-label=${name} name=${name} onkeydown=${e => handleOnKey(e.target)}  onkeyup=${e => handleOnKey(e.target)}  onkeypress=${e => handleOnKey(e.target)}>`
+        return bel`<input class=${css['field-input']} type='text' aria-live="true" aria-label=${name} name=${name} onchange=${e => handleOnChange(e.target) } onkeydown=${e => handleOnKey(e.target)}  onkeyup=${e => handleOnKey(e.target)}  onkeypress=${e => handleOnKey(e.target)}>`
     }
-    function ui_range_selector_input () {
-        return bel`<input class=${css.range} type='range' min=${min} max=${max} step="1" value="0" aria-label="${name}-range" name="${name}-range" oninput=${(e) => handleOnChange(e.target)} onchange=${(e) => handleOnChange(e.target)}>`
+
+    function ui_range_selector_input (val = 0) {
+        return bel`<input class=${css.range} type='range' min=${min} max=${max} step="1" value=${val} aria-label="${name}-range" name="${name}-range" oninput=${(e) => handleOnChange(e.target)} onchange=${(e) => handleOnChange(e.target)}>`
     }
 
     function handleOnKey (target) {
-        const value = target.value
-        if ( isNaN( value ) ) return target.value = ''
-        else return target.value = value
+        let value
+        isNaN( target.value ) ? value = '' : value = target.value
+        return value
     }
 
     function receive(message) {
@@ -1743,6 +1751,7 @@ function rangeSlider({page, name = 'range-slider', info, range, label}, protocol
 const css = csjs`
 .range-slider {
     display: grid;
+    grid-gap: 4px 0;
 }
 .field {
     display: grid;
@@ -1807,7 +1816,7 @@ const css = csjs`
     box-shadow: 0 0 0 8px rgba(0,0,0,.2);
 }
 .range:active::-webkit-slider-thumb {
-    box-shadow: 0 0 0 12px rgba(0,0,0,.4);
+    box-shadow: 0 0 0 12px rgba(170,170,170,.8);
 }
 `
 }).call(this)}).call(this,"/src/index.js")

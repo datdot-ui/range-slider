@@ -67,6 +67,9 @@ body {
 .container {
     padding: 25px;
 }
+.container > div {
+    margin-bottom: 25px;
+}
 .terminal {
     background-color: #212121;
     color: #f2f2f2;
