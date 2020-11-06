@@ -1687,10 +1687,13 @@ function rangeSlider({page, name = 'range-slider', info, range, label}, protocol
     const send2Parent = protocol( receive )
     send2Parent({page, from: name, flow: widget, type: 'init', filename, line: 11})
     let input = ui_input(label)
-    let fill = bel`<span class=${css.fill}></span>`
-    let bar = bel`<span class=${css.bar}>${fill}</span>`
-    let sliderRange = ui_range_selector_input()
+    let fill = bel`<div class=${css.fill}></span>`
     
+    let bar = bel`<div class=${css.bar}>${fill}${makeLine(100)}</div>`
+    let sliderRange = ui_range_selector_input()
+
+    
+
     const el = bel`
     <div class=${css['range-slider']}>
         <div class=${css.field}>
@@ -1704,6 +1707,15 @@ function rangeSlider({page, name = 'range-slider', info, range, label}, protocol
         </div>
     </div>`
     return el
+    
+    function makeLine (count) {
+        let scale = bel`<div class=${css.scale}></div>`
+        for (let i = 0; i < count; i++) {
+            let line = bel`<span class='${css.line}'></span>`
+            scale.append(line)
+        }
+        return scale
+    }
 
     function setBar (value) {
         fill.style.width = `${value}%`
@@ -1737,9 +1749,10 @@ function rangeSlider({page, name = 'range-slider', info, range, label}, protocol
     }
 
     function handleOnKey (target) {
-        let value
-        isNaN( target.value ) ? value = '' : value = target.value
-        return value
+        let val = target.value
+        if (val.length  > 3) return val = ''
+        if ( isNaN(val) ) return val = '' 
+        else return val
     }
 
     function receive(message) {
@@ -1751,7 +1764,6 @@ function rangeSlider({page, name = 'range-slider', info, range, label}, protocol
 const css = csjs`
 .range-slider {
     display: grid;
-    grid-gap: 4px 0;
 }
 .field {
     display: grid;
@@ -1769,6 +1781,7 @@ const css = csjs`
     border: 1px solid #BBBBBB;
     padding: 10px;
     text-align: center;
+    font-size: 14px;
 }
 .info {
     color: #707070;
@@ -1780,16 +1793,33 @@ const css = csjs`
     position: absolute;
     z-index: 1;
     left: 3px;
-    top: 3px;
+    top: 12px;
     width: 100%;
     height: 10px;
     background-color: rgba(221,221,221, 1);
+    border-radius: 50px;
 }
 .fill {
     display: block;
     width: 0;
     height: 100%;
     background-color: #AAA;
+    border-radius: 50px;
+}
+.scale {
+    position: absolute;
+    top: 2px;
+    left: 0;
+    z-index: -1;
+    display: grid;
+    grid-template-rows: auto;
+    grid-template-columns: repeat(100, 2vh);
+}
+.line {
+    display: block;
+    width: 2px;
+    height: 6px;
+    background-color: #fff;
 }
 .range { 
     position: relative;
@@ -1797,7 +1827,7 @@ const css = csjs`
     -webkit-appearance: none;
     background-color: transparent;
     width: 100%;
-    height: 10px;
+    height: 30px;
     outline: none;
 }
 .range::-webkit-slider-thumb{
@@ -1813,10 +1843,50 @@ const css = csjs`
     transition: box-shadow .3s ease-in-out;
 }
 .range::-webkit-slider-thumb:hover {
-    box-shadow: 0 0 0 8px rgba(0,0,0,.2);
+    box-shadow: 0 0 0 10px rgba(0,0,0,.2);
 }
 .range:active::-webkit-slider-thumb {
-    box-shadow: 0 0 0 12px rgba(170,170,170,.8);
+    box-shadow: 0 0 0 20px rgba(170,170,170,.8);
+}
+.range::-moz-range-thumb {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background-color: #fff;
+    border: 1px solid #EAEAEA;
+    outline: none;
+    cursor: pointer;
+    box-shadow: 0 0 0 1px rgba(0,0,0,.1);
+    transition: box-shadow .3s ease-in-out;
+}
+.range::-moz-range-thumb:hover {
+    box-shadow: 0 0 0 10px rgba(0,0,0,.2);
+}
+.range:active::-moz-slider-thumb {
+    box-shadow: 0 0 0 20px rgba(170,170,170,.8);
+}
+.range::-ms-thumb {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background-color: #fff;
+    border: 1px solid #EAEAEA;
+    outline: none;
+    cursor: pointer;
+    box-shadow: 0 0 0 1px rgba(0,0,0,.1);
+    transition: box-shadow .3s ease-in-out;
+}
+.range::-ms-thumb:hover {
+    box-shadow: 0 0 0 1px rgba(0,0,0,.2);
+}
+.range:active::-ms-thumb {
+    box-shadow: 0 0 0 1px rgba(170,170,170,.8);
+}
+@media (min-width: 2660px) {
+    .scale {
+        display: flex;
+        justify-content: space-around;
+    }
 }
 `
 }).call(this)}).call(this,"/src/index.js")
