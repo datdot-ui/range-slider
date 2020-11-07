@@ -1,1 +1,1 @@
-# datdot-ui-range-selector
+# datdot-ui-range-slider
