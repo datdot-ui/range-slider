@@ -1843,10 +1843,10 @@ const css = csjs`
     transition: box-shadow .3s ease-in-out;
 }
 .range::-webkit-slider-thumb:hover {
-    box-shadow: 0 0 0 10px rgba(0,0,0,.2);
+    box-shadow: 0 0 0 4px rgba(0,0,0,.2);
 }
-.range:active::-webkit-slider-thumb {
-    box-shadow: 0 0 0 20px rgba(170,170,170,.8);
+.range::-webkit-slider-thumb:active {
+    box-shadow: 0 0 0 8px rgba(170,170,170,.8);
 }
 .range::-moz-range-thumb {
     width: 20px;
@@ -1862,8 +1862,8 @@ const css = csjs`
 .range::-moz-range-thumb:hover {
     box-shadow: 0 0 0 10px rgba(0,0,0,.2);
 }
-.range:active::-moz-slider-thumb {
-    box-shadow: 0 0 0 20px rgba(170,170,170,.8);
+.range::-moz-slider-thumb:active {
+    box-shadow: 0 0 0 24px rgba(170,170,170,.8);
 }
 .range::-ms-thumb {
     width: 20px;
@@ -1879,7 +1879,7 @@ const css = csjs`
 .range::-ms-thumb:hover {
     box-shadow: 0 0 0 1px rgba(0,0,0,.2);
 }
-.range:active::-ms-thumb {
+.range::-ms-thumb:active {
     box-shadow: 0 0 0 1px rgba(170,170,170,.8);
 }
 @media (min-width: 2660px) {
