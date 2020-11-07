@@ -1680,6 +1680,7 @@ const path = require('path')
 const filename = path.basename(__filename)
 
 module.exports = rangeSlider
+let repeatLine = 1000
 
 function rangeSlider({page, name = 'range-slider', info, range, label}, protocol) {
     const widget = 'ui-range-slider'
@@ -1688,8 +1689,8 @@ function rangeSlider({page, name = 'range-slider', info, range, label}, protocol
     send2Parent({page, from: name, flow: widget, type: 'init', filename, line: 11})
     let input = ui_input(label)
     let fill = bel`<div class=${css.fill}></span>`
-    
-    let bar = bel`<div class=${css.bar}>${fill}${makeLine(100)}</div>`
+
+    let bar = bel`<div class=${css.bar}>${fill}${makeLine(repeatLine)}</div>`
     let sliderRange = ui_range_selector_input()
 
     
@@ -1798,6 +1799,7 @@ const css = csjs`
     height: 10px;
     background-color: rgba(221,221,221, 1);
     border-radius: 50px;
+    overflow: hidden;
 }
 .fill {
     display: block;
@@ -1813,7 +1815,7 @@ const css = csjs`
     z-index: -1;
     display: grid;
     grid-template-rows: auto;
-    grid-template-columns: repeat(100, 2vh);
+    grid-template-columns: repeat(${repeatLine}, 20px);
 }
 .line {
     display: block;
@@ -1881,12 +1883,6 @@ const css = csjs`
 }
 .range::-ms-thumb:active {
     box-shadow: 0 0 0 1px rgba(170,170,170,.8);
-}
-@media (min-width: 2660px) {
-    .scale {
-        display: flex;
-        justify-content: space-around;
-    }
 }
 `
 }).call(this)}).call(this,"/src/index.js")
