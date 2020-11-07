@@ -13,10 +13,10 @@ function demoComponent() {
     const ram = rangeSlider({page: 'JOBS', name: 'ram', label: 'RAM', info: getram(), range: { min:0, max:100 }}, protocol('ram') )
     const element = bel`
     <div class=${css.wrap}>
-    <div class=${css.container}>
-        ${cpu} ${ram}
-    </div>
-    ${terminal}
+        <div class=${css.container}>
+            ${cpu} ${ram}
+        </div>
+        ${terminal}
     </div>`
     
     return element

@@ -15,10 +15,10 @@ function demoComponent() {
     const ram = rangeSlider({page: 'JOBS', name: 'ram', label: 'RAM', info: getram(), range: { min:0, max:100 }}, protocol('ram') )
     const element = bel`
     <div class=${css.wrap}>
-    <div class=${css.container}>
-        ${cpu} ${ram}
-    </div>
-    ${terminal}
+        <div class=${css.container}>
+            ${cpu} ${ram}
+        </div>
+        ${terminal}
     </div>`
     
     return element
@@ -1680,6 +1680,7 @@ const path = require('path')
 const filename = path.basename(__filename)
 
 module.exports = rangeSlider
+// the number for displaying scale lines
 let repeatLine = 1000
 
 function rangeSlider({page, name = 'range-slider', info, range, label}, protocol) {
@@ -1689,11 +1690,8 @@ function rangeSlider({page, name = 'range-slider', info, range, label}, protocol
     send2Parent({page, from: name, flow: widget, type: 'init', filename, line: 11})
     let input = ui_input(label)
     let fill = bel`<div class=${css.fill}></span>`
-
     let bar = bel`<div class=${css.bar}>${fill}${makeLine(repeatLine)}</div>`
     let sliderRange = ui_range_selector_input()
-
-    
 
     const el = bel`
     <div class=${css['range-slider']}>
@@ -1709,6 +1707,7 @@ function rangeSlider({page, name = 'range-slider', info, range, label}, protocol
     </div>`
     return el
     
+    // display scale lines
     function makeLine (count) {
         let scale = bel`<div class=${css.scale}></div>`
         for (let i = 0; i < count; i++) {
