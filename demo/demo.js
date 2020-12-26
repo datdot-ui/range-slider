@@ -4,51 +4,77 @@ const rangeSlider = require('..')
 const path = require('path')
 const filename = path.basename(__filename)
 const { getcpu, getram } = require('../src/node_modules/getSystemInfo')
-
-let count = 1
+const domlog = require('ui-domlog')
 
 function demoComponent() {
-    const terminal = bel`<div class=${css.terminal}></div>`
-    const cpu = rangeSlider({page: 'JOBS', name: 'cpu', label: 'CPU', info: getcpu(), range: { min:0, max:100 }}, protocol('cpu') )
-    const ram = rangeSlider({page: 'JOBS', name: 'ram', label: 'RAM', info: getram(), range: { min:0, max:100 }}, protocol('ram') )
-    const element = bel`
-    <div class=${css.wrap}>
-        <div class=${css.container}>
-            ${cpu} ${ram}
-        </div>
-        ${terminal}
-    </div>`
+    let recipients = []
+    const cpu = rangeSlider({page: 'JOBS', name: 'cpu', label: 'CPU', info: getcpu(), range: { min:0, max: 100 }, setValue: 8}, protocol('cpu') )
+    const ram = rangeSlider({page: 'JOBS', name: 'ram', label: 'RAM', info: getram(), range: { min:0, max: 100 }, setValue: 27}, protocol('ram') )
     
-    return element
+    const content = bel`
+    <div class=${css.content}>
+        ${cpu} ${ram}
+    </div>
+    `
+    // show logs
+    let terminal = bel`<div class=${css.terminal}></div>`
+    // container
+    const container = wrap(content, terminal)
+    return container
 
+    function wrap (content) {
+        const container = bel`
+        <div class=${css.wrap}>
+            <section class=${css.container}>
+                ${content}
+            </section>
+            ${terminal}
+        </div>
+        `
+        return container
+    }
+
+    /*************************
+    * ------- Actions --------
+    *************************/
+
+    /*************************
+    * ------- Protocol --------
+    *************************/
     function protocol (name) {
         return send => {
-            send(({page: 'JOBS', flow: 'ui-range-slider', type: 'ready', filename, line: 15}))
-            domlog({page: 'JOBS', flow: 'ui-range-slider', type: 'ready', filename, line: 15})
+            recipients[name] = send
             return receive
         }
     }
-    
+
+    /*************************
+    * ------ Receivers -------
+    *************************/
     function receive (message) {
         const { page, from, flow, type, action, body, filename, line } = message
-        domlog(message)
+        showLog(message)
     }
-    
-    function domlog (message) {
-        const { page, from, flow, type, body, action, filename, line } = message
-        const log = bel`
-        <div class=${css.log} role="log">
-            <div class=${css.badge}>${count}</div>
-            <div class=${css.output}>${page}/${flow}: ${from} ${type} ${body}</div>
-            <div class=${css['code-line']}>${filename}:${line}</div>
-        </div>`
-        // console.log( message )
-        terminal.append(log)
-        terminal.scrollTop = terminal.scrollHeight
-        count++
+
+    // keep the scroll on bottom when the log displayed on the terminal
+    function showLog (message) { 
+        sendMessage(message)
+        .then( log => {
+            terminal.append(log)
+            terminal.scrollTop = terminal.scrollHeight
+        }
+    )}
+   /*********************************
+    * ------ Promise() Element -------
+    *********************************/
+    async function sendMessage (message) {
+        return await new Promise( (resolve, reject) => {
+            if (message === undefined) reject('no message import')
+            const log = domlog(message)
+            return resolve(log)
+        }).catch( err => { throw new Error(err) } )
     }
 }
-
 
 const css = csjs`
 body {

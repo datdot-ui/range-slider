@@ -6,51 +6,77 @@ const rangeSlider = require('..')
 const path = require('path')
 const filename = path.basename(__filename)
 const { getcpu, getram } = require('../src/node_modules/getSystemInfo')
-
-let count = 1
+const domlog = require('ui-domlog')
 
 function demoComponent() {
-    const terminal = bel`<div class=${css.terminal}></div>`
-    const cpu = rangeSlider({page: 'JOBS', name: 'cpu', label: 'CPU', info: getcpu(), range: { min:0, max:100 }}, protocol('cpu') )
-    const ram = rangeSlider({page: 'JOBS', name: 'ram', label: 'RAM', info: getram(), range: { min:0, max:100 }}, protocol('ram') )
-    const element = bel`
-    <div class=${css.wrap}>
-        <div class=${css.container}>
-            ${cpu} ${ram}
-        </div>
-        ${terminal}
-    </div>`
+    let recipients = []
+    const cpu = rangeSlider({page: 'JOBS', name: 'cpu', label: 'CPU', info: getcpu(), range: { min:0, max: 100 }, setValue: 8}, protocol('cpu') )
+    const ram = rangeSlider({page: 'JOBS', name: 'ram', label: 'RAM', info: getram(), range: { min:0, max: 100 }, setValue: 27}, protocol('ram') )
     
-    return element
+    const content = bel`
+    <div class=${css.content}>
+        ${cpu} ${ram}
+    </div>
+    `
+    // show logs
+    let terminal = bel`<div class=${css.terminal}></div>`
+    // container
+    const container = wrap(content, terminal)
+    return container
 
+    function wrap (content) {
+        const container = bel`
+        <div class=${css.wrap}>
+            <section class=${css.container}>
+                ${content}
+            </section>
+            ${terminal}
+        </div>
+        `
+        return container
+    }
+
+    /*************************
+    * ------- Actions --------
+    *************************/
+
+    /*************************
+    * ------- Protocol --------
+    *************************/
     function protocol (name) {
         return send => {
-            send(({page: 'JOBS', flow: 'ui-range-slider', type: 'ready', filename, line: 15}))
-            domlog({page: 'JOBS', flow: 'ui-range-slider', type: 'ready', filename, line: 15})
+            recipients[name] = send
             return receive
         }
     }
-    
+
+    /*************************
+    * ------ Receivers -------
+    *************************/
     function receive (message) {
         const { page, from, flow, type, action, body, filename, line } = message
-        domlog(message)
+        showLog(message)
     }
-    
-    function domlog (message) {
-        const { page, from, flow, type, body, action, filename, line } = message
-        const log = bel`
-        <div class=${css.log} role="log">
-            <div class=${css.badge}>${count}</div>
-            <div class=${css.output}>${page}/${flow}: ${from} ${type} ${body}</div>
-            <div class=${css['code-line']}>${filename}:${line}</div>
-        </div>`
-        // console.log( message )
-        terminal.append(log)
-        terminal.scrollTop = terminal.scrollHeight
-        count++
+
+    // keep the scroll on bottom when the log displayed on the terminal
+    function showLog (message) { 
+        sendMessage(message)
+        .then( log => {
+            terminal.append(log)
+            terminal.scrollTop = terminal.scrollHeight
+        }
+    )}
+   /*********************************
+    * ------ Promise() Element -------
+    *********************************/
+    async function sendMessage (message) {
+        return await new Promise( (resolve, reject) => {
+            if (message === undefined) reject('no message import')
+            const log = domlog(message)
+            return resolve(log)
+        }).catch( err => { throw new Error(err) } )
     }
 }
-
 
 const css = csjs`
 body {
@@ -108,7 +134,7 @@ body {
 
 document.body.append( demoComponent() )
 }).call(this)}).call(this,"/demo/demo.js")
-},{"..":28,"../src/node_modules/getSystemInfo":29,"bel":3,"csjs-inject":6,"path":26}],2:[function(require,module,exports){
+},{"..":34,"../src/node_modules/getSystemInfo":35,"bel":3,"csjs-inject":6,"path":26,"ui-domlog":33}],2:[function(require,module,exports){
 var trailingNewlineRegex = /\n[\s]+$/
 var leadingNewlineRegex = /^\n[\s]+/
 var trailingSpaceRegex = /[\s]+$/
@@ -1673,6 +1699,94 @@ process.chdir = function (dir) {
 process.umask = function() { return 0; };
 
 },{}],28:[function(require,module,exports){
+arguments[4][2][0].apply(exports,arguments)
+},{"dup":2}],29:[function(require,module,exports){
+arguments[4][3][0].apply(exports,arguments)
+},{"./appendChild":28,"dup":3,"hyperx":24}],30:[function(require,module,exports){
+arguments[4][4][0].apply(exports,arguments)
+},{"csjs":9,"dup":4,"insert-css":25}],31:[function(require,module,exports){
+arguments[4][5][0].apply(exports,arguments)
+},{"csjs/get-css":8,"dup":5}],32:[function(require,module,exports){
+arguments[4][6][0].apply(exports,arguments)
+},{"./csjs":30,"./get-css":31,"dup":6}],33:[function(require,module,exports){
+const bel = require('bel')
+const csjs = require('csjs-inject')
+
+module.exports = domlog
+
+let count = 1
+
+function domlog (message) {
+    const { page = 'demo', from, flow, type, body, action, filename, line } = message
+    const log = bel`
+    <div class=${css.log} role="log">
+        <div class=${css.badge}>${count}</div>
+        <div class="${css.output} ${type === 'error' ? css.error : '' }">
+            <span class=${css.page}>${page}</span> 
+            <span class=${css.flow}>${flow}</span>
+            <span class=${css.from}>${from}</span>
+            <span class=${css.type}>${type}</span>
+            <span class=${css.info}>${typeof body === 'string' ? body : JSON.stringify(body, ["swarm", "feeds", "links"], 3)}</span>
+        </div>
+        <div class=${css['code-line']}>${filename}:${line}</div>
+    </div>`
+    count++
+    return log
+    
+}
+const css = csjs`
+.log {
+    display: grid;
+    grid-template-rows: auto;
+    grid-template-columns: auto 1fr auto;
+    align-items: center;
+    padding: 2px 12px 0 0;
+    border-bottom: 1px solid #333;
+}
+.log:last-child, .log:last-child .page, .log:last-child .flow, .log:last-child .type {
+    color: #FFF500;
+    font-weight: bold;
+}
+.output {}
+.badge {
+    background-color: #333;
+    padding: 6px;
+    margin-right: 10px;
+    font-size: 14px;
+    display: inline-block;
+}
+.code-line {}
+.error {
+    
+}
+.error .type {
+    padding: 2px 6px;
+    color: white;
+    background-color: #AC0000;
+    border-radius: 2px;
+}
+.error .info {
+    color: #FF2626;
+}
+.page {
+    display: inline-block;
+    color: rgba(255,255,255,.75);
+    background-color: #2A2E30;
+    padding: 4px 6px;
+    border-radius: 4px;
+}
+.flow {
+    color: #1DA5FF;
+}
+.from {
+    color: #fff;
+}
+.type {
+    color: #FFB14A;
+}
+.info {}
+`
+},{"bel":29,"csjs-inject":32}],34:[function(require,module,exports){
 (function (__filename){(function (){
 const bel = require('bel')
 const csjs = require('csjs-inject')
@@ -1683,30 +1797,42 @@ module.exports = rangeSlider
 // the number for displaying scale lines
 let repeatLine = 1000
 
-function rangeSlider({page, name = 'range-slider', info, range, label}, protocol) {
+function rangeSlider({page, flow, name = 'range-slider', info, range, label, setValue}, protocol) {
     const widget = 'ui-range-slider'
     const { min, max } = range
     const send2Parent = protocol( receive )
-    send2Parent({page, from: name, flow: widget, type: 'init', filename, line: 11})
-    let input = ui_input(label)
+    send2Parent({page, from: name, flow: flow ? `${flow}/${widget}` : widget, type: 'init', filename, line: 14})
+    let currentValue = setValue > 0 ? setValue : 0
+    let input = ui_input(label, currentValue)
     let fill = bel`<div class=${css.fill}></span>`
     let bar = bel`<div class=${css.bar}>${fill}${makeLine(repeatLine)}</div>`
-    let sliderRange = ui_range_selector_input()
+    let sliderRange = ui_range_slider(currentValue)
+
+    if (/cpu/i.test(input.name)) input.value = `${input.value}%`
+    if (/ram/i.test(input.name)) input.value = `${input.value} GB`
+
+    input.onclick = handleClick
+    input.onfocus = handleFocus
+    input.onblur = handleBlur
+    input.onkeyup = handleKeyup
+    input.onkeydown = handleKeydown
+    input.onchange = handleChange
+    sliderRange.oninput = handleSliderRangeInput
 
     const el = bel`
     <div class=${css['range-slider']}>
         <div class=${css.field}>
-            ${ui_label()}
-            ${input}
-            <span class=${css.info}>${info}</span>
+            ${ui_label()}${input}<span class=${css.info}>${info}</span>
         </div>
         <div class=${css['slider-container']}>
-            ${bar}
-            ${sliderRange}
+            ${bar}${sliderRange}
         </div>
     </div>`
     return el
-    
+
+    /*************************
+    * ------- Layout --------
+    *************************/
     // display scale lines
     function makeLine (count) {
         let scale = bel`<div class=${css.scale}></div>`
@@ -1718,43 +1844,125 @@ function rangeSlider({page, name = 'range-slider', info, range, label}, protocol
     }
 
     function setBar (value) {
-        fill.style.width = `${value}%`
-    }
-
-    function handleOnChange (target) {
-        /***
-        // todo: make an array list for percentage(%) using 
-        ***/
-       let text
-       let val = target.value
-        sliderRange.value = val
-        setBar(val)
-
-        name === 'cpu' ?  text = `${val}%`  : text = `${val} MB` 
-        input.value = text
-
-        send2Parent({page, from: name, flow: widget, type: 'select', body: text, filename, line: 27 })
+        return fill.style.width = `${value}%`
     }
 
     function ui_label () {
         return bel`<label for=${name} class=${css.label}>${label}</label>`
     }
 
-    function ui_input () {
-        return bel`<input class=${css['field-input']} type='text' aria-live="true" aria-label=${name} name=${name} onchange=${e => handleOnChange(e.target) } onkeydown=${e => handleOnKey(e.target)}  onkeyup=${e => handleOnKey(e.target)}  onkeypress=${e => handleOnKey(e.target)}>`
+    function ui_input (label, val) {
+        return bel`<input class=${css['field-input']} type='text' aria-live="true" value=${val} aria-label=${label} name=${label}>`
     }
 
-    function ui_range_selector_input (val = 0) {
-        return bel`<input class=${css.range} type='range' min=${min} max=${max} step="1" value=${val} aria-label="${name}-range" name="${name}-range" oninput=${(e) => handleOnChange(e.target)} onchange=${(e) => handleOnChange(e.target)}>`
+    function ui_range_slider (val) {
+        setBar(currentValue)
+        return bel`<input class=${css.range} type='range' min=${min} max=${max} step="1" value=${val} aria-label="${name}-range" name="${name}-range" oninput=${(e) => handleChange(e)} onchange=${(e) => handleChange(e)}>`
     }
 
-    function handleOnKey (target) {
+    /*************************
+    * ------- Actions --------
+    *************************/
+    function handleSliderRangeInput (event) {
+        const val = event.target.value
+        currentValue = val
+        input.value = /cpu/i.test(input.name) ? `${val}%` : `${val} MB`
+        setBar(val)
+    }
+
+    function handleClick (event) {
+        const target = event.target
+        target.select()
+    }
+    
+    function handleFocus (event) {
+        const target = event.target
         let val = target.value
-        if (val.length  > 3) return val = ''
-        if ( isNaN(val) ) return val = '' 
-        else return val
+        console.log('current', currentValue);
+        if (/%/.test(val)) return target.value = Number(val.replace('%', ''))
+        if (/MB/.test(val)) return target.value = Number(val.replace('MB', ''))
+        if (/GB/.test(val)) return target.value = Number(val.replace('GB', ''))
     }
 
+    function handleBlur (event) {
+        const target = event.target
+        let name = target.name
+        console.log('current', currentValue);
+        if (/cpu/i.test(name)) target.value = `${currentValue}%`
+        if (/ram/i.test(name)) target.value = `${currentValue} GB`
+    }
+
+    function handleKeyup (event) {
+        const target = event.target
+        const val = target.value
+        currentValue = Number(val)
+        if  ( currentValue > max ) {
+            currentValue = Number(max)
+            target.value = currentValue
+            sliderRange.value = currentValue
+            return setBar( currentValue )
+        }
+        console.log('current', currentValue);
+        sliderRange.value = Number(currentValue)
+        return setBar( currentValue )
+    }
+
+    function handleKeydown (event) {
+        const target = event.target
+        const val = target.value
+        const keyCode = event.keyCode
+        currentValue = Number(val)
+        
+        // number 0-9
+        if (keyCode >= 48 && keyCode <= 57) { 
+            return
+        }
+        // increase arrow-up, arrow-right
+        if (keyCode === 38 || keyCode === 39) { 
+            let increament = currentValue + 1
+            currentValue = increament
+            target.value = currentValue
+            sliderRange.value = increament
+            return setBar( increament)
+        }
+        // decrease arrow-left, arrow-down
+        if (keyCode === 37 || keyCode === 40) {
+            if (currentValue < 1) return
+            let decreament =  currentValue - 1
+            currentValue = decreament
+            target.value = currentValue
+            sliderRange.value = decreament
+            return setBar( decreament)
+        }
+        // delete or backspace
+        if (keyCode === 8 ) {
+            val.split('').splice(-1, 1)
+            return
+        }
+        return event.preventDefault()
+    }
+
+    function handleChange (event) {
+        /***
+        // todo: make an array list for percentage(%) using 
+        ***/
+        const target = event.target
+       let val = target.value
+        sliderRange.value = currentValue
+        currentValue = Number(val)
+        if (currentValue > max) {
+            currentValue = max
+            target.value = currentValue
+            return 
+        }
+        console.log('current', currentValue);
+        setBar(currentValue)
+        send2Parent({page, from: name, flow: widget, type: 'select', body: target.value, filename, line: 27 })
+    }
+    
+    /*************************
+    * ------ Receivers -------
+    *************************/
     function receive(message) {
         const { page, from, flow, type, action, body } = message
         // console.log('received from main component', message )
@@ -1885,7 +2093,7 @@ const css = csjs`
 }
 `
 }).call(this)}).call(this,"/src/index.js")
-},{"bel":3,"csjs-inject":6,"path":26}],29:[function(require,module,exports){
+},{"bel":3,"csjs-inject":6,"path":26}],35:[function(require,module,exports){
 module.exports = { getcpu, getram, getnet }
 
 function getcpu () {
