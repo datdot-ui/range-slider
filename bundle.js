@@ -10,8 +10,8 @@ const domlog = require('ui-domlog')
 
 function demoComponent() {
     let recipients = []
-    const cpu = rangeSlider({page: 'JOBS', name: 'cpu', label: 'CPU', info: getcpu(), range: { min:0, max: 100 }, setValue: 8}, protocol('cpu') )
-    const ram = rangeSlider({page: 'JOBS', name: 'ram', label: 'RAM', info: getram(), range: { min:0, max: 100 }, setValue: 27}, protocol('ram') )
+    const cpu = rangeSlider({page: 'JOBS', name: 'cpu', label: 'CPU', info: getcpu(), range: { min:0, max: 100 }, setValue: 10}, protocol('cpu') )
+    const ram = rangeSlider({page: 'JOBS', name: 'ram', label: 'RAM', info: getram(), range: { min:0, max: 100 }, setValue: 30}, protocol('ram') )
     
     const content = bel`
     <div class=${css.content}>
@@ -79,6 +79,13 @@ function demoComponent() {
 }
 
 const css = csjs`
+*, *:before, *:after {
+    box-sizing: inherit;
+}
+html {
+    box-sizing: border-box;
+    height: 100%;
+}
 body {
     margin: 0;
     padding: 0;
@@ -90,12 +97,13 @@ body {
 .wrap {
     display: grid;
     grid-template-columns: 1fr;
-    grid-template-rows: 75vh 25vh;
+    grid-template-rows: 75% 25%;
+    height: 100%;
 }
 .container {
     padding: 25px;
 }
-.container > div {
+.content {
     margin-bottom: 25px;
 }
 .terminal {
@@ -103,32 +111,6 @@ body {
     color: #f2f2f2;
     font-size: 13px;
     overflow-y: auto;
-}
-.log:last-child {
-    color: #FFF500;
-    font-weight: bold;
-    
-}
-.log {
-    display: grid;
-    grid-template-rows: auto;
-    grid-template-columns: auto 1fr auto;
-    align-items: center;
-    padding: 2px 12px 0 0;
-    border-bottom: 1px solid #333;
-}
-.output {
-
-}
-.badge {
-    background-color: #333;
-    padding: 6px;
-    margin-right: 10px;
-    font-size: 14px;
-    display: inline-block;
-}
-.code-line {
-
 }
 `
 
@@ -1818,6 +1800,8 @@ function rangeSlider({page, flow, name = 'range-slider', info, range, label, set
     input.onkeydown = handleKeydown
     input.onchange = handleChange
     sliderRange.oninput = handleSliderRangeInput
+    sliderRange.onkeydown = handleKey
+    sliderRange.onchange = handleChange
 
     const el = bel`
     <div class=${css['range-slider']}>
@@ -1829,6 +1813,16 @@ function rangeSlider({page, flow, name = 'range-slider', info, range, label, set
         </div>
     </div>`
     return el
+
+    function handleKey (event) {
+        const { target } = event
+        if (isIncreaseMultipleTimes(event)) {
+            return actionCalculate(target, 9)
+        }
+        if (isDecreaseMultipleTimes(event)) {
+            return actionCalculate(target, -9)
+        }
+    }
 
     /*************************
     * ------- Layout --------
@@ -1857,12 +1851,57 @@ function rangeSlider({page, flow, name = 'range-slider', info, range, label, set
 
     function ui_range_slider (val) {
         setBar(currentValue)
-        return bel`<input class=${css.range} type='range' min=${min} max=${max} step="1" value=${val} aria-label="${name}-range" name="${name}-range" oninput=${(e) => handleChange(e)} onchange=${(e) => handleChange(e)}>`
+        return bel`<input class=${css.range} type='range' min=${min} max=${max} step="1" value=${val} aria-label="${name}-range" name="${name}-range">`
     }
 
+    /*******************************
+    * ------- Condicitions --------
+    *******************************/
+    // Shift(Left/Right) + ArrowUp or Shift(Left/Right) + ArrowRight
+    function isIncrease (event) {
+        if (event.keyCode === 38 || event.keyCode === 39) return true
+    }
+    // Shift(Left/Right) + ArrowLeft or Shift(Left/Right) + ArrowDown
+    function isDecrease (event) {
+        if (event.keyCode === 37 || event.keyCode === 40) return true
+    }
+    function isIncreaseMultipleTimes (event) {
+        if ((event.keyCode === 38 || event.keyCode === 39) && event.shiftKey) return true
+    }
+    // Shift(Left/Right) + ArrowLeft or Shift(Left/Right) + ArrowDown
+    function isDecreaseMultipleTimes (event) {
+        if ((event.keyCode === 37 || event.keyCode === 40) && event.shiftKey) return true
+    }
+    // Number 0-9
+    function isNumberKey ({keyCode}) {
+        if (keyCode >= 48 && keyCode <= 57) return true
+    }
+    // Enter
+    function isEnterKey ({keyCode}) {
+        if (keyCode === 13) return true
+    }
+    // backspace/delete
+    function isDelete ({keyCode}) {
+        if (keyCode === 8) return true
+    }
+    // tab
+    function isTab ({keyCode}) {
+        if (keyCode === 9) return true
+    }
     /*************************
     * ------- Actions --------
     *************************/
+    function actionCalculate (target, number) {
+        let total = currentValue + number
+        currentValue = total
+        if (currentValue > max) currentValue = max
+        if (currentValue < min) currentValue = min
+        input.value = currentValue
+        sliderRange.value = currentValue
+        setBar( currentValue )
+        return
+    }
+
     function handleSliderRangeInput (event) {
         const val = event.target.value
         currentValue = val
@@ -1877,11 +1916,10 @@ function rangeSlider({page, flow, name = 'range-slider', info, range, label, set
     
     function handleFocus (event) {
         const target = event.target
-        let val = target.value
         console.log('current', currentValue);
-        if (/%/.test(val)) return target.value = Number(val.replace('%', ''))
-        if (/MB/.test(val)) return target.value = Number(val.replace('MB', ''))
-        if (/GB/.test(val)) return target.value = Number(val.replace('GB', ''))
+        if (/%/.test(target.value)) return target.value = Number(target.value.replace('%', ''))
+        if (/MB/.test(target.value)) return target.value = Number(target.value.replace('MB', ''))
+        if (/GB/.test(target.value)) return target.value = Number(target.value.replace('GB', ''))
     }
 
     function handleBlur (event) {
@@ -1889,22 +1927,23 @@ function rangeSlider({page, flow, name = 'range-slider', info, range, label, set
         let name = target.name
         console.log('current', currentValue);
         if (/cpu/i.test(name)) target.value = `${currentValue}%`
-        if (/ram/i.test(name)) target.value = `${currentValue} GB`
+        if (/ram/i.test(name)) target.value = `${currentValue} MB`
     }
 
     function handleKeyup (event) {
         const target = event.target
         const val = target.value
         currentValue = Number(val)
-        if  ( currentValue > max ) {
-            currentValue = Number(max)
+        if  ( currentValue >= max ) {
+            currentValue = max
             target.value = currentValue
             sliderRange.value = currentValue
             return setBar( currentValue )
         }
         console.log('current', currentValue);
         sliderRange.value = Number(currentValue)
-        return setBar( currentValue )
+        setBar( currentValue )
+        return 
     }
 
     function handleKeydown (event) {
@@ -1912,33 +1951,27 @@ function rangeSlider({page, flow, name = 'range-slider', info, range, label, set
         const val = target.value
         const keyCode = event.keyCode
         currentValue = Number(val)
-        
+        let body = name === 'cpu' ? `${currentValue}%` : `${currentValue} GB`
+        send2Parent({from: `${event.code}(${keyCode})`, flow: 'keyboard', type: 'pressed', filename, line: 184 });
         // number 0-9
-        if (keyCode >= 48 && keyCode <= 57) { 
-            return
+        if (isNumberKey(event)) return
+        // enter
+        if (isEnterKey(event))  { 
+            target.blur()
+            return send2Parent({from: name, flow: widget, type: 'changed', body, filename, line: 190 });
         }
-        // increase arrow-up, arrow-right
-        if (keyCode === 38 || keyCode === 39) { 
-            let increament = currentValue + 1
-            currentValue = increament
-            target.value = currentValue
-            sliderRange.value = increament
-            return setBar( increament)
-        }
-        // decrease arrow-left, arrow-down
-        if (keyCode === 37 || keyCode === 40) {
-            if (currentValue < 1) return
-            let decreament =  currentValue - 1
-            currentValue = decreament
-            target.value = currentValue
-            sliderRange.value = decreament
-            return setBar( decreament)
-        }
+        // increase by Shift + ArrowUp or Shift + ArrowRight
+        if (isIncreaseMultipleTimes(event)) return actionCalculate(target, 10)
+        // decrease by Shift + ArrowLeft or Shift + ArrowDown
+        if (isDecreaseMultipleTimes(event)) return actionCalculate(target, -10)
+        // increase by ArrowUp or ArrowRight
+        if (isIncrease(event)) return actionCalculate(target, 1)
+        // decrease by ArrowLeft or ArrowDown
+        if (isDecrease(event)) return actionCalculate(target, -1)
         // delete or backspace
-        if (keyCode === 8 ) {
-            val.split('').splice(-1, 1)
-            return
-        }
+        if (isDelete(event)) return val.split('').splice(-1, 1)
+        // tab
+        if (isTab(event)) return
         return event.preventDefault()
     }
 
@@ -1953,11 +1986,12 @@ function rangeSlider({page, flow, name = 'range-slider', info, range, label, set
         if (currentValue > max) {
             currentValue = max
             target.value = currentValue
-            return 
+            return setBar(currentValue)
         }
         console.log('current', currentValue);
         setBar(currentValue)
-        send2Parent({page, from: name, flow: widget, type: 'select', body: target.value, filename, line: 27 })
+        let body = name === 'cpu' ? `${currentValue}%` : `${currentValue} MB`
+        return send2Parent({page, from: name, flow: widget, type: 'changed', body, filename, line: 223 })
     }
     
     /*************************
@@ -1984,12 +2018,19 @@ const css = csjs`
     color: #707070;
 }
 .field-input {
-    width: 55px;
+    width: 100px;
     border-radius: 4px;
     border: 1px solid #BBBBBB;
     padding: 10px;
     text-align: center;
     font-size: 14px;
+    outline: none;
+}
+.field-input:focus {
+    border-color: rgba(94, 176, 245, 1);
+}
+.field-input::selection {
+    background-color: rgba(188, 224, 253, 1);
 }
 .info {
     color: #707070;
@@ -2004,7 +2045,7 @@ const css = csjs`
     top: 12px;
     width: 100%;
     height: 10px;
-    background-color: rgba(221,221,221, 1);
+    background-color: rgba(221, 221, 221, 1);
     border-radius: 50px;
     overflow: hidden;
 }
@@ -2014,6 +2055,13 @@ const css = csjs`
     height: 100%;
     background-color: #AAA;
     border-radius: 50px;
+    transition: background-color 0.3s ease-in-out;
+}
+.slider-container:focus-within .bar .fill {
+    background-color: #5EB0F5;
+}
+.slider-container:focus-within .bar .fill:hover {
+    background-color: #5EB0F5
 }
 .scale {
     position: absolute;
@@ -2039,7 +2087,7 @@ const css = csjs`
     height: 30px;
     outline: none;
 }
-.range::-webkit-slider-thumb{
+.range::-webkit-slider-thumb {
     -webkit-appearance: none;
     width: 20px;
     height: 20px;
@@ -2048,14 +2096,14 @@ const css = csjs`
     border: 1px solid #EAEAEA;
     outline: none;
     cursor: pointer;
-    box-shadow: 0 0 0 1px rgba(0,0,0,.1);
-    transition: box-shadow .3s ease-in-out;
+    box-shadow: 0 3px 6px rgba(0, 0, 0, .4);
+    transition: background-color .3s, box-shadow .15s linear;
 }
 .range::-webkit-slider-thumb:hover {
-    box-shadow: 0 0 0 4px rgba(0,0,0,.2);
+    box-shadow: 0 0 0 14px rgba(0, 0, 0, .25);
 }
 .range::-webkit-slider-thumb:active {
-    box-shadow: 0 0 0 8px rgba(170,170,170,.8);
+    box-shadow: 0 0 0 14px rgba(94, 176, 245, .8);
 }
 .range::-moz-range-thumb {
     width: 20px;
@@ -2065,14 +2113,14 @@ const css = csjs`
     border: 1px solid #EAEAEA;
     outline: none;
     cursor: pointer;
-    box-shadow: 0 0 0 1px rgba(0,0,0,.1);
-    transition: box-shadow .3s ease-in-out;
+    box-shadow: 0 3px 6px rgba(0, 0, 0, .4);
+    transition: background-color .3s, box-shadow .15s linear;
 }
 .range::-moz-range-thumb:hover {
-    box-shadow: 0 0 0 10px rgba(0,0,0,.2);
+    box-shadow: 0 0 0 14px rgba(0, 0, 0, .25);
 }
-.range::-moz-slider-thumb:active {
-    box-shadow: 0 0 0 24px rgba(170,170,170,.8);
+.range::-moz-range-thumb:active {
+    box-shadow: 0 0 0 14px rgba(94, 176, 245, .8);
 }
 .range::-ms-thumb {
     width: 20px;
@@ -2082,14 +2130,14 @@ const css = csjs`
     border: 1px solid #EAEAEA;
     outline: none;
     cursor: pointer;
-    box-shadow: 0 0 0 1px rgba(0,0,0,.1);
-    transition: box-shadow .3s ease-in-out;
+    box-shadow: 0 6px 12px rgba(0, 0, 0, .25);
+    transition: background-color .3s, box-shadow .3s linear;
 }
 .range::-ms-thumb:hover {
-    box-shadow: 0 0 0 1px rgba(0,0,0,.2);
+    box-shadow: 0 6px 12px rgba(0, 0, 0, .25);
 }
 .range::-ms-thumb:active {
-    box-shadow: 0 0 0 1px rgba(170,170,170,.8);
+    box-shadow: 0 0 0 1px rgba(170, 170, 170,.8);
 }
 `
 }).call(this)}).call(this,"/src/index.js")
