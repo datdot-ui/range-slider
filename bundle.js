@@ -1803,9 +1803,22 @@ function rangeSlider({page, flow, name = 'range-slider', info, range, label, set
     input.onkeydown = handleKeydown
     input.onkeypress = handleKeypress
     input.onchange = handleChange
+    input.onfocus = handleFocus
     sliderRange.oninput = handleSliderRangeInput
     sliderRange.onkeydown = handleKey
     sliderRange.onchange = handleChange
+    sliderRange.onfocus = handleFocus
+
+    let mousewheelevt = (/Firefox/i.test(navigator.userAgent))? "DOMMouseScroll" : "mousewheel"
+    if (mousewheelevt === "mousewheel") {
+        input.onmousewheel = handleMousewheel
+        sliderRange.onmousewheel = handleMousewheel
+    } else {
+        input.onwheel = handleWheel
+        sliderRange.onwheel = handleWheel
+        // sliderRange.addEventListener('DOMMouseScroll', handleMousewheel)
+    }
+    
 
     const el = bel`
     <div class=${css['range-slider']}>
@@ -1856,9 +1869,18 @@ function rangeSlider({page, flow, name = 'range-slider', info, range, label, set
     /*******************************
     * ------- Condicitions --------
     *******************************/
-     // select all
-     function isSelectAll({keyCode}) {
-        if (keyCode === 91 && keyCode === 65) return true
+    // wheel scroll
+    function handleWheel (event) {
+        const target = event.target
+        if (event.deltaY < 0) return actionCalculate(target, -1)
+        if (event.deltaY > 0) return actionCalculate(target, 1)
+    }
+    function handleMousewheel (event) {
+        console.dir(event);
+        const wDelta = event.wheelDelta < 0 ? 'down' : 'up'
+        const target = event.target
+        if (wDelta === 'up') return actionCalculate(target, 1)
+        if (wDelta === 'down') return actionCalculate(target, -1)
     }
     // ArrowRight or ArrowUp
     function isIncrease ({keyCode}) {
@@ -1917,6 +1939,10 @@ function rangeSlider({page, flow, name = 'range-slider', info, range, label, set
     function handleClick (event) {
         const target = event.target
         target.select()
+    }
+
+    function handleFocus (event) {
+        const target = event.target
     }
     
     function handleKeypress (event) {
@@ -2010,9 +2036,13 @@ const css = csjs`
     grid-template-columns: auto 1fr auto;
     align-items: center;
 }
+.range-slider:hover .label, .range-slider:focus .label, .range-slider:focus-within .label, .range-slider:active .label {
+    color: rgba(94, 176, 245, 1);
+}
 .label {
     margin-right: 12px;
     color: #707070;
+    transition: color .3s linear;
 }
 .field-input {
     width: 100%;
@@ -2023,7 +2053,7 @@ const css = csjs`
     font-size: 14px;
     outline: none;
 }
-.field-input:focus-within {
+.field-input:focus, .field-input:focus-within {
     border-color: rgba(94, 176, 245, 1);
 }
 .field-input::selection {
@@ -2054,10 +2084,10 @@ const css = csjs`
     border-radius: 50px;
     transition: background-color 0.3s ease-in-out;
 }
-.slider-container:focus-within .bar .fill {
+.slider-container:focus .bar .fill, .slider-container:active .bar .fill {
     background-color: #5EB0F5;
 }
-.slider-container:focus-within .bar .fill:hover {
+.slider-container:focus .bar .fill:hover, .slider-container:active .bar .fill:hover {
     background-color: #5EB0F5
 }
 .scale {
