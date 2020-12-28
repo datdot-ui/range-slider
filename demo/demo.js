@@ -3,17 +3,23 @@ const csjs = require('csjs-inject')
 const rangeSlider = require('..')
 const path = require('path')
 const filename = path.basename(__filename)
-const { getcpu, getram } = require('../src/node_modules/getSystemInfo')
+const { getcpu, getram, getbandwidth } = require('../src/node_modules/getSystemInfo')
 const domlog = require('ui-domlog')
 
 function demoComponent() {
     let recipients = []
     const cpu = rangeSlider({page: 'JOBS', name: 'cpu', label: 'CPU', info: getcpu(), range: { min:0, max: 100 }, setValue: 10}, protocol('cpu') )
-    const ram = rangeSlider({page: 'JOBS', name: 'ram', label: 'RAM', info: getram(), range: { min:0, max: 100 }, setValue: 30}, protocol('ram') )
+    const ram = rangeSlider({page: 'JOBS', name: 'ram', label: 'RAM', info: getram(), range: { min:0, max: 8 }, setValue: 1}, protocol('ram') )
+    const bandwidth = getbandwidth()
+    const download = rangeSlider({page: 'JOBS', name: 'download', label: 'Download', info: bandwidth.download, range: { min:0, max: 20}, setValue: 8}, protocol('download') )
+    const upload = rangeSlider({page: 'JOBS', name: 'upload', label: 'Upload', info: bandwidth.upload, range: { min:0, max: 5 }, setValue: 1}, protocol('upload') )
     
     const content = bel`
     <div class=${css.content}>
-        ${cpu} ${ram}
+        ${cpu}
+        ${ram}
+        ${download}
+        ${upload}
     </div>
     `
     // show logs
