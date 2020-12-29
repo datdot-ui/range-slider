@@ -8,7 +8,7 @@ const domlog = require('ui-domlog')
 
 function demoComponent() {
     let recipients = []
-    const cpu = rangeSlider({page: 'JOBS', name: 'cpu', label: 'CPU', info: getcpu(), range: { min:0, max: 100 }, setValue: 10}, protocol('cpu') )
+    const cpu = rangeSlider({page: 'JOBS', name: 'cpu', label: 'CPU', info: getcpu(), range: { min:0, max: 100 }}, protocol('cpu') )
     const ram = rangeSlider({page: 'JOBS', name: 'ram', label: 'RAM', info: getram(), range: { min:0, max: 8 }, setValue: 1}, protocol('ram') )
     const bandwidth = getbandwidth()
     const download = rangeSlider({page: 'JOBS', name: 'download', label: 'Download', info: bandwidth.download, range: { min:0, max: 20}, setValue: 8}, protocol('download') )
@@ -26,6 +26,16 @@ function demoComponent() {
     let terminal = bel`<div class=${css.terminal}></div>`
     // container
     const container = wrap(content, terminal)
+
+    document.addEventListener('DOMContentLoaded', () => {
+        document.body.addEventListener('click', () => {
+            [...content.children].map( item => {
+                item.addEventListener('touchend', () => {
+                    item.blur()
+                })
+            })
+        })
+    })
     return container
 
     function wrap (content) {
@@ -58,8 +68,8 @@ function demoComponent() {
     * ------ Receivers -------
     *************************/
     function receive (message) {
-        const { page, from, flow, type, action, body, filename, line } = message
-        showLog(message)
+        const { page, from, flow, type, action, body, line } = message
+        showLog({page, from, flow, type, body, filename, line: 61})
     }
 
     // keep the scroll on bottom when the log displayed on the terminal

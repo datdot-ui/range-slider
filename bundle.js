@@ -10,7 +10,7 @@ const domlog = require('ui-domlog')
 
 function demoComponent() {
     let recipients = []
-    const cpu = rangeSlider({page: 'JOBS', name: 'cpu', label: 'CPU', info: getcpu(), range: { min:0, max: 100 }, setValue: 10}, protocol('cpu') )
+    const cpu = rangeSlider({page: 'JOBS', name: 'cpu', label: 'CPU', info: getcpu(), range: { min:0, max: 100 }}, protocol('cpu') )
     const ram = rangeSlider({page: 'JOBS', name: 'ram', label: 'RAM', info: getram(), range: { min:0, max: 8 }, setValue: 1}, protocol('ram') )
     const bandwidth = getbandwidth()
     const download = rangeSlider({page: 'JOBS', name: 'download', label: 'Download', info: bandwidth.download, range: { min:0, max: 20}, setValue: 8}, protocol('download') )
@@ -28,6 +28,16 @@ function demoComponent() {
     let terminal = bel`<div class=${css.terminal}></div>`
     // container
     const container = wrap(content, terminal)
+
+    document.addEventListener('DOMContentLoaded', () => {
+        document.body.addEventListener('click', () => {
+            [...content.children].map( item => {
+                item.addEventListener('touchend', () => {
+                    item.blur()
+                })
+            })
+        })
+    })
     return container
 
     function wrap (content) {
@@ -60,8 +70,8 @@ function demoComponent() {
     * ------ Receivers -------
     *************************/
     function receive (message) {
-        const { page, from, flow, type, action, body, filename, line } = message
-        showLog(message)
+        const { page, from, flow, type, action, body, line } = message
+        showLog({page, from, flow, type, body, filename, line: 61})
     }
 
     // keep the scroll on bottom when the log displayed on the terminal
@@ -1783,12 +1793,12 @@ const filename = path.basename(__filename)
 
 module.exports = rangeSlider
 
-function rangeSlider({page, flow, name = 'range-slider', info, range, label, setValue}, protocol) {
+function rangeSlider({page, flow, name = 'range-slider', info, range, label, setValue = 0}, protocol) {
     const widget = 'ui-range-slider'
     const { min, max } = range
     const send2Parent = protocol( receive )
     send2Parent({page, from: name, flow: flow ? `${flow}/${widget}` : widget, type: 'init', filename, line: 12})
-    let currentValue = setValue > 0 ? setValue : 0
+    let currentValue = setValue
     let input = ui_input(label, currentValue)
     let fill = bel`<div class=${css.fill}></span>`
     let repeatLine = 1000
@@ -1798,30 +1808,8 @@ function rangeSlider({page, flow, name = 'range-slider', info, range, label, set
 
     line.style.gridTemplateColumns = `repeat(${repeatLine}, 20px)`
 
-    input.onclick = handleClick
-    input.onkeyup = handleKeyup
-    input.onkeydown = handleKeydown
-    input.onkeypress = handleKeypress
-    input.onchange = handleChange
-    input.onfocus = handleFocus
-    sliderRange.oninput = handleSliderRangeInput
-    sliderRange.onkeydown = handleKey
-    sliderRange.onchange = handleChange
-    sliderRange.onfocus = handleFocus
-
-    let mousewheelevt = (/Firefox/i.test(navigator.userAgent))? "DOMMouseScroll" : "mousewheel"
-    if (mousewheelevt === "mousewheel") {
-        input.onmousewheel = handleMousewheel
-        sliderRange.onmousewheel = handleMousewheel
-    } else {
-        input.onwheel = handleWheel
-        sliderRange.onwheel = handleWheel
-        // sliderRange.addEventListener('DOMMouseScroll', handleMousewheel)
-    }
-    
-
     const el = bel`
-    <div class=${css['range-slider']}>
+    <div class=${css['range-slider']} aria-label=${name}>
         <div class=${css.field}>
             ${ui_label()}
             <div class=${css['input-form']}>
@@ -1834,6 +1822,30 @@ function rangeSlider({page, flow, name = 'range-slider', info, range, label, set
             ${bar}${sliderRange}
         </div>
     </div>`
+
+    input.onclick = handleClick
+    input.onkeyup = handleKeyup
+    input.onkeydown = handleKeydown
+    input.onkeypress = handleKeypress
+    input.onchange = handleChange
+    input.onfocus = handleFocus
+    input.onblur = handleBlur
+    sliderRange.onclick = handleSliderClick
+    sliderRange.oninput = handleSliderRangeInput
+    sliderRange.onkeydown = handleKey
+    sliderRange.onchange = handleChange
+    sliderRange.onfocus = handleFocus
+    sliderRange.ontouchstart = handleTouchStart
+
+    let mousewheelevt = (/Firefox/i.test(navigator.userAgent))? "DOMMouseScroll" : "mousewheel"
+    if (mousewheelevt === "mousewheel") {
+        input.onmousewheel = handleMousewheel
+        sliderRange.onmousewheel = handleMousewheel
+    } else {
+        input.onwheel = handleWheel
+        sliderRange.onwheel = handleWheel
+    }
+
     return el
 
     /*************************
@@ -1858,45 +1870,47 @@ function rangeSlider({page, flow, name = 'range-slider', info, range, label, set
     }
 
     function ui_input (label, val) {
-        return bel`<input class=${css['field-input']} type='text' aria-live="true" value=${val} aria-label=${label} name=${label}>`
+        return bel`<input class=${css['field-input']} type='number' min=${min} max=${max} aria-live="true" value=${val} aria-label=${label} name=${label} tabindex="0">`
     }
 
     function ui_range_slider (val) {
         setBar(currentValue)
-        return bel`<input class=${css.range} type='range' min=${min} max=${max} step="1" value=${val} aria-label="${name}-range" name="${name}-range">`
+        return bel`<input class=${css.range} type='range' min=${min} max=${max} step="1" value=${val} aria-label="${name}-range" name="${name}-range" tabindex="0">`
     }
 
     /*******************************
     * ------- Condicitions --------
     *******************************/
-    // wheel scroll
-    function handleWheel (event) {
-        const target = event.target
-        if (event.deltaY < 0) return actionCalculate(target, -1)
-        if (event.deltaY > 0) return actionCalculate(target, 1)
+    // ArrowUp
+    function isIncreaseUp ({keyCode}) {
+        if (keyCode === 38) return true
     }
-    function handleMousewheel (event) {
-        console.dir(event);
-        const wDelta = event.wheelDelta < 0 ? 'down' : 'up'
-        const target = event.target
-        if (wDelta === 'up') return actionCalculate(target, 1)
-        if (wDelta === 'down') return actionCalculate(target, -1)
-    }
-    // ArrowRight or ArrowUp
-    function isIncrease ({keyCode}) {
-        if (keyCode === 38 || keyCode === 39) return true
+    // ArrowRight
+    function isIncreaseRight ({keyCode}) {
+        if (keyCode === 39) return true
     }
     // ArrowLeft or ArrowDown
-    function isDecrease ({keyCode}) {
-        if (keyCode === 37 || keyCode === 40) return true
+    function isDecreaseLeft ({keyCode}) {
+        if (keyCode === 37) return true
     }
-    // Shift(Left/Right) + ArrowUp or Shift(Left/Right) + ArrowRight
-    function isIncreaseMultipleTimes ({keyCode, shiftKey}) {
-        if ((keyCode === 38 || keyCode === 39) && shiftKey) return true
+    function isDecreaseDown ({keyCode}) {
+        if (keyCode === 40) return true
     }
-    // Shift(Left/Right) + ArrowLeft or Shift(Left/Right) + ArrowDown
-    function isDecreaseMultipleTimes ({keyCode, shiftKey}) {
-        if ((keyCode === 37 || keyCode === 40) && shiftKey) return true
+    // Shift + ArrowUp
+    function isIncreaseMultipleTimesUp ({keyCode, shiftKey}) {
+        if (keyCode === 38 && shiftKey) return true
+    }
+    // Shift + ArrowRight
+    function isIncreaseMultipleTimesRight ({keyCode, shiftKey}) {
+        if (keyCode === 39 && shiftKey) return true
+    }
+    // Shift + ArrowLeft
+    function isDecreaseMultipleTimesLeft ({keyCode, shiftKey}) {
+        if (keyCode === 37 && shiftKey ) return true
+    }
+    // Shift + ArrowDown
+    function isDecreaseMultipleTimesDown ({keyCode, shiftKey}) {
+        if (keyCode === 40 && shiftKey) return true
     }
     // Number 0-9
     function isNumberKey ({keyCode}) {
@@ -1917,15 +1931,38 @@ function rangeSlider({page, flow, name = 'range-slider', info, range, label, set
     /*************************
     * ------- Actions --------
     *************************/
+    // wheel scroll
+    function handleWheel (event) {
+        const target = event.target
+        if (event.deltaY < 0) return actionCalculate(target, -1)
+        if (event.deltaY > 0) return actionCalculate(target, 1)
+    }
+
+    function handleMousewheel (event) {
+        const wDelta = event.wheelDelta < 0 ? 'down' : 'up'
+        const target = event.target
+        if (wDelta === 'up') return actionCalculate(target, 1)
+        if (wDelta === 'down') return actionCalculate(target, -1)
+    }
+    
     function actionCalculate (target, number) {
-        let total = currentValue + number
+        let total = Number(target.value) + number
         currentValue = total
         if (currentValue > max) currentValue = max
-        if (currentValue < min) currentValue = min
+        if (currentValue < 0) currentValue = 0
         input.value = currentValue
         sliderRange.value = currentValue
         setBar( currentValue )
-        return send2Parent({from: name, flow: widget, type: 'changed', body: currentValue, filename, line: 128 })
+        return send2Parent({from: name, flow: widget, type: 'changed', body: currentValue, filename, line: 166 })
+    }
+
+    function handleTouchStart (event) {
+        const target = event.target
+        target.focus()
+    }
+
+    function handleSliderClick (event) {
+        const target = event.target
     }
 
     function handleSliderRangeInput (event) {
@@ -1944,21 +1981,26 @@ function rangeSlider({page, flow, name = 'range-slider', info, range, label, set
     function handleFocus (event) {
         const target = event.target
     }
+
+    function handleBlur (event) {
+        const target = event.target
+        target.blur()
+    }
     
     function handleKeypress (event) {
         const target = event.target
         const keyCode = event.keyCode
-        if (currentValue >= max && keyCode >= 48 && keyCode <= 57 || currentValue === 0 && keyCode === 48) return event.preventDefault()
+        if (currentValue > max && keyCode >= 48 && keyCode <= 57 || target.value === 0 && keyCode === 48) {
+            return event.preventDefault()
+        }
     }
 
     function handleKey (event) {
         const { target } = event
         if (isIncreaseMultipleTimes(event)) {
-            console.log('increase');
             return actionCalculate(target, 9)
         }
         if (isDecreaseMultipleTimes(event)) {
-            console.log( 'Decrease');
             return actionCalculate(target, -9)
         }
     }
@@ -1980,23 +2022,27 @@ function rangeSlider({page, flow, name = 'range-slider', info, range, label, set
         const val = Number(target.value)
         const keyCode = event.keyCode
         currentValue = val
-        send2Parent({from: `${event.code}(${keyCode})`, flow: 'keyboard', type: 'pressed', filename, line: 179 })
-        
+        send2Parent({from: `${event.code}(${keyCode})`, flow: 'keyboard', type: 'pressed', filename, line: 223 })
         // number 0-9
         if (isNumberKey(event)) return
         // enter
         if (isEnterKey(event))  { 
             target.blur()
-            return send2Parent({from: name, flow: widget, type: 'changed', body: currentValue, filename, line: 186 })
+            return send2Parent({from: name, flow: widget, type: 'changed', body: currentValue, filename, line: 229 })
         }
-        // increase by Shift + ArrowUp or Shift + ArrowRight
-        if (isIncreaseMultipleTimes(event)) return actionCalculate(target, 10)
-        // decrease by Shift + ArrowLeft or Shift + ArrowDown
-        if (isDecreaseMultipleTimes(event)) return actionCalculate(target, -10)
-        // increase by ArrowUp or ArrowRight
-        if (isIncrease(event)) return actionCalculate(target, 1)
-        // decrease by ArrowLeft or ArrowDown
-        if (isDecrease(event)) return actionCalculate(target, -1)
+        // increase by Shift + ArrowUp
+        if (isIncreaseMultipleTimesUp(event)) return actionCalculate(target, 9)
+        // increase by Shift + ArrowRight
+        if (isIncreaseMultipleTimesRight(event)) return actionCalculate(target, 10)
+        // decrease by Shift + ArrowLeft
+        if (isDecreaseMultipleTimesLeft(event)) return actionCalculate(target, -10)
+        // decrease by Shift + ArrowDown
+        if (isDecreaseMultipleTimesDown(event)) return actionCalculate(target, -9)
+        // increase by ArrowUp or decrease by ArrowDown
+        if (isIncreaseUp(event) || isDecreaseDown(event) ) return actionCalculate(target, 0)
+        if (isIncreaseRight(event)) return actionCalculate(target, 1)
+        // decrease by ArrowLeft
+        if (isDecreaseLeft(event)) return actionCalculate(target, -1)
         // delete or backspace
         if (isDelete(event)) return target.value.split('').splice(-1, 1)
         // tab
@@ -2014,7 +2060,7 @@ function rangeSlider({page, flow, name = 'range-slider', info, range, label, set
         currentValue = val
         sliderRange.value = currentValue
         setBar(currentValue)
-        return send2Parent({page, from: name, flow: widget, type: 'changed', body: currentValue, filename, line: 213 })
+        return send2Parent({page, from: name, flow: widget, type: 'changed', body: currentValue, filename, line: 261 })
     }
     
     /*************************
@@ -2036,7 +2082,9 @@ const css = csjs`
     grid-template-columns: auto 1fr auto;
     align-items: center;
 }
-.range-slider:hover .label, .range-slider:focus .label, .range-slider:focus-within .label, .range-slider:active .label {
+.range-slider:active .label, 
+.range-slider:focus .label, 
+.range-slider:focus-within .label {
     color: rgba(94, 176, 245, 1);
 }
 .label {
@@ -2053,7 +2101,8 @@ const css = csjs`
     font-size: 14px;
     outline: none;
 }
-.field-input:focus, .field-input:focus-within {
+.field-input:focus, 
+.field-input:focus-within {
     border-color: rgba(94, 176, 245, 1);
 }
 .field-input::selection {
@@ -2084,10 +2133,13 @@ const css = csjs`
     border-radius: 50px;
     transition: background-color 0.3s ease-in-out;
 }
-.slider-container:focus .bar .fill, .slider-container:active .bar .fill {
+.range-slider:active .bar .fill,
+.range-slider:focus .bar .fill, 
+.range-slider:focus-within .bar .fill {
     background-color: #5EB0F5;
 }
-.slider-container:focus .bar .fill:hover, .slider-container:active .bar .fill:hover {
+.range-slider:focus .bar .fill:hover, 
+.range-slider:focus-within .bar .fill:hover {
     background-color: #5EB0F5
 }
 .scale {
@@ -2126,9 +2178,10 @@ const css = csjs`
     transition: background-color .3s, box-shadow .15s linear;
 }
 .range::-webkit-slider-thumb:hover {
-    box-shadow: 0 0 0 14px rgba(0, 0, 0, .25);
+    box-shadow: 0 0 0 14px rgba(94, 176, 245, .8);
 }
-.range::-webkit-slider-thumb:active, .range::-webkit-slider-thumb:focus {
+.range::-webkit-slider-thumb:focus,
+.range::-webkit-slider-thumb:focus-within {
     box-shadow: 0 0 0 14px rgba(94, 176, 245, .8);
 }
 .range::-moz-range-thumb {
@@ -2145,7 +2198,8 @@ const css = csjs`
 .range::-moz-range-thumb:hover {
     box-shadow: 0 0 0 14px rgba(0, 0, 0, .25);
 }
-.range::-moz-range-thumb:active, .range::-moz-range-thumb:focus {
+.range::-moz-range-thumb:focus,
+.range::-moz-range-thumb:focus-within {
     box-shadow: 0 0 0 14px rgba(94, 176, 245, .8);
 }
 .range::-ms-thumb {
@@ -2162,7 +2216,8 @@ const css = csjs`
 .range::-ms-thumb:hover {
     box-shadow: 0 6px 12px rgba(0, 0, 0, .25);
 }
-.range::-ms-thumb:active, .range::-ms-thumb:focus {
+.range::-ms-thumb:focus,
+.range::-ms-thumb:focus-within {
     box-shadow: 0 0 0 1px rgba(170, 170, 170,.8);
 }
 .input-form {
