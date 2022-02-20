@@ -2,14 +2,31 @@ const bel = require('bel')
 const csjs = require('csjs-inject')
 const path = require('path')
 const filename = path.basename(__filename)
+const message_maker = require('message-maker')
+
+var id = 0
 
 module.exports = rangeSlider
 
-function rangeSlider({page, flow, name = 'range-slider', info, range, label, setValue = 0}, protocol) {
+function rangeSlider({page, flow, name = 'range-slider', info, range, label, setValue = 0}, parent_protocol) {
+// ---------------------------------------------
+    const myaddress = `${__filename}-${id++}`
+    const inbox = {}
+    const outbox = {}
+    const recipients = {}
+    const names = {}
+    const message_id = to => (outbox[to] = 1 + (outbox[to]||0))
+
+    const {notify, address} = parent_protocol(myaddress, listen)
+    names[address] = recipients['parent'] = { name: 'parent', notify, address, make: message_maker(myaddress) }
+    notify(recipients['parent'].make({ to: address, type: 'ready', refs: {} }))
+
+    function listen (msg) {
+        console.log('New message', { msg })
+    }
+// ---------------------------------------------
     const widget = 'ui-range-slider'
     const { min, max } = range
-    const send2Parent = protocol( receive )
-    send2Parent({page, from: name, flow: flow ? `${flow}/${widget}` : widget, type: 'init', filename, line: 12})
     let currentValue = setValue
     let input = ui_input(label, currentValue)
     let fill = bel`<div class=${css.fill}></span>`
@@ -165,7 +182,8 @@ function rangeSlider({page, flow, name = 'range-slider', info, range, label, set
         input.value = currentValue
         sliderRange.value = currentValue
         setBar( currentValue )
-        return send2Parent({from: name, flow: widget, type: 'changed', body: currentValue, filename, line: 166 })
+        const { notify, address, make } = recipients['parent']
+        return notify(make({ to: address, type: 'changed', data: { currentValue, filename, line: 166 } }))
     }
 
     function handleTouchStart (event) {
@@ -234,13 +252,14 @@ function rangeSlider({page, flow, name = 'range-slider', info, range, label, set
         const val = Number(target.value)
         const keyCode = event.keyCode
         currentValue = val
-        send2Parent({from: `${event.code}(${keyCode})`, flow: 'keyboard', type: 'pressed', filename, line: 223 })
+        const { notify, address, make } = recipients['parent']
+        notify(make({ to: address, type: 'pressed', data: { target: `${event.code}(${keyCode})`, filename, line: 223 } }))
         // number 0-9
         if (isNumberKey(event)) return
         // enter
         if (isEnterKey(event))  { 
             target.blur()
-            return send2Parent({from: name, flow: widget, type: 'changed', body: currentValue, filename, line: 229 })
+            return notify(make({ to: address, type: 'changed', data: { currentValue, filename, line: 229 } }))
         }
         // increase by Shift + ArrowUp
         if (isIncreaseMultipleTimesUp(event)) return actionCalculate(target, 9)
@@ -272,7 +291,8 @@ function rangeSlider({page, flow, name = 'range-slider', info, range, label, set
         currentValue = val
         sliderRange.value = currentValue
         setBar(currentValue)
-        return send2Parent({page, from: name, flow: widget, type: 'changed', body: currentValue, filename, line: 261 })
+        const { notify, address, make } = recipients['parent']
+        return notify(make({ to: address, type: 'changed', data: { currentValue, filename, line: 261 } }))
     }
     
     /*************************
