@@ -1,6 +1,6 @@
 {
   "name": "datdot-ui-range-slider",
-  "version": "0.0.0",
+  "version": "0.0.1-alpha",
   "description": "example ui components",
   "main": "src/index.js",
   "scripts": {
@@ -10,7 +10,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/datdotorg/datdot-ui-range-slider.git"
+    "url": "git+https://github.com/datdot-ui/range-slider.git"
   },
   "keywords": [
     "datdot",
@@ -21,17 +21,17 @@
   ],
   "author": "",
   "license": "MIT",
-  "homepage": "https://github.com/datdotorg/datdot-ui-range-slider#readme",
+  "homepage": "https://github.com/datdot-ui/range-slider#readme",
   "devDependencies": {
     "browserify": "^17.0.0",
     "budo": "^11.6.4",
-    "ui-domlog": "github:datdotorg/ui-domlog"
+    "ui-domlog": "github:datdot-ui/domlog",
+    "datdot-ui-logs": "git+https://github.com/datdot-ui/logs.git#v0.0.1-alpha"
   },
   "dependencies": {
     "async-os-utils": "^0.1.3",
     "bel": "^6.0.0",
     "csjs-inject": "^1.0.1",
-    "datdot-ui-logs": "git+https://github.com/datdotorg/datdot-ui-logs.git",
     "date-fns": "^2.16.1",
     "debug": "^4.1.1",
     "message-maker": "github:datdotorg/message-maker"

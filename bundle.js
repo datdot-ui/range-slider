@@ -140,7 +140,7 @@ body {
 
 document.body.append(demo())
 }).call(this)}).call(this,"/demo/demo.js")
-},{"..":30,"../src/node_modules/getSystemInfo":31,"bel":3,"csjs-inject":6,"message-maker":23,"path":28,"ui-domlog":24}],2:[function(require,module,exports){
+},{"..":30,"../src/node_modules/getSystemInfo":31,"bel":3,"csjs-inject":6,"message-maker":24,"path":28,"ui-domlog":23}],2:[function(require,module,exports){
 var trailingNewlineRegex = /\n[\s]+$/
 var leadingNewlineRegex = /^\n[\s]+/
 var trailingSpaceRegex = /[\s]+$/
@@ -871,14 +871,6 @@ function scopify(css, ignores) {
 }
 
 },{"./regex":19,"./replace-animations":20,"./scoped-name":21}],23:[function(require,module,exports){
-module.exports = function message_maker (from) {
-  let msg_id = 0
-  return function make ({to, type, data = null, refs = {} }) {
-      const stack = (new Error().stack.split('\n').slice(2).filter(x => x.trim()))
-      return { head: [from, to, msg_id++], refs, type, data, meta: { stack }}
-  }
-}
-},{}],24:[function(require,module,exports){
 const bel = require('bel')
 const csjs = require('csjs-inject')
 
@@ -956,7 +948,15 @@ const css = csjs`
 }
 .info {}
 `
-},{"bel":3,"csjs-inject":6}],25:[function(require,module,exports){
+},{"bel":3,"csjs-inject":6}],24:[function(require,module,exports){
+module.exports = function message_maker (from) {
+  let msg_id = 0
+  return function make ({to, type, data = null, refs = {} }) {
+      const stack = (new Error().stack.split('\n').slice(2).filter(x => x.trim()))
+      return { head: [from, to, msg_id++], refs, type, data, meta: { stack }}
+  }
+}
+},{}],25:[function(require,module,exports){
 module.exports = attributeToProperty
 
 var transform = {
@@ -2484,7 +2484,7 @@ const css = csjs`
 .unit {}
 `
 }).call(this)}).call(this,"/src/index.js")
-},{"bel":3,"csjs-inject":6,"message-maker":23,"path":28}],31:[function(require,module,exports){
+},{"bel":3,"csjs-inject":6,"message-maker":24,"path":28}],31:[function(require,module,exports){
 module.exports = { getcpu, getram, getbandwidth }
 
 function getcpu () {
