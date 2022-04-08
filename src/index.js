@@ -8,7 +8,7 @@ var id = 0
 
 module.exports = rangeSlider
 
-function rangeSlider({page, flow, name = 'range-slider', info, range, label, setValue = 0}, parent_protocol) {
+function rangeSlider({name = 'range-slider', info, range, label, setValue = 0}, parent_protocol) {
 // ---------------------------------------------
     const myaddress = `${__filename}-${id++}`
     const inbox = {}
