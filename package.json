@@ -1,6 +1,6 @@
 {
   "name": "datdot-ui-range-slider",
-  "version": "0.0.0",
+  "version": "0.0.0-prealpha",
   "description": "example ui components",
   "main": "src/index.js",
   "scripts": {
@@ -10,7 +10,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/playproject-io/datdot-ui-range-slider.git"
+    "url": "git+https://github.com/datdot-ui/range-slider.git"
   },
   "keywords": [
     "datdot",
@@ -22,12 +22,12 @@
   "author": "",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/playproject-io/datdot-ui-range-slider/issues"
+    "url": "https://github.com/datdot-ui/range-slider/issues"
   },
-  "homepage": "https://github.com/playproject-io/datdot-ui-range-slider#readme",
+  "homepage": "https://github.com/datdot-ui/range-slider#readme",
   "devDependencies": {
     "budo": "^11.6.4",
-    "ui-domlog": "github:fionataeyang/ui-domlog"
+    "ui-domlog": "github:datdot-ui/domlog#v0.0.0-prealpha"
   },
   "dependencies": {
     "async-os-utils": "^0.1.3",
