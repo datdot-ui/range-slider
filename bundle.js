@@ -6,7 +6,6 @@ const rangeSlider = require('..')
 const path = require('path')
 const filename = path.basename(__filename)
 const { getcpu, getram, getbandwidth } = require('../src/node_modules/getSystemInfo')
-const domlog = require('ui-domlog')
 const message_maker = require('message-maker')
 
 var id = 0
@@ -34,31 +33,13 @@ function demo() {
         // send back ack
         const { notify, make, address } = names[from]
         notify(make({ to: address, type: 'ack', refs: { 'cause': head } }))
-        appendLog(msg)
-    }
-
-    // keep the scroll on bottom when the log displayed on the terminal
-    function appendLog (message) { 
-        makeLog(message)
-        .then( log => {
-            terminal.append(log)
-            terminal.scrollTop = terminal.scrollHeight
-        }
-    )}
-
-    async function makeLog (message) {
-        return await new Promise( (resolve, reject) => {
-            if (message === undefined) reject('no message import')
-            const log = domlog(message)
-            return resolve(log)
-        }).catch( err => { throw new Error(err) } )
     }
 // --------------------------------------------------------
-    const cpu = rangeSlider({page: 'JOBS', name: 'cpu', label: 'CPU', info: getcpu(), range: { min:0, max: 100 }}, make_protocol('cpu') )
-    const ram = rangeSlider({page: 'JOBS', name: 'ram', label: 'RAM', info: getram(), range: { min:0, max: 8 }, setValue: 1}, make_protocol('ram') )
+    const cpu = rangeSlider({ label: 'CPU', info: getcpu(), range: { min:0, max: 100 } }, make_protocol('cpu') )
+    const ram = rangeSlider({ label: 'RAM', info: getram(), range: { min:0, max: 8 }, value: 1 }, make_protocol('ram') )
     const bandwidth = getbandwidth()
-    const download = rangeSlider({page: 'JOBS', name: 'download', label: 'Download', info: bandwidth.download, range: { min:0, max: 20}, setValue: 8}, make_protocol('download') )
-    const upload = rangeSlider({page: 'JOBS', name: 'upload', label: 'Upload', info: bandwidth.upload, range: { min:0, max: 5 }, setValue: 1}, make_protocol('upload') )
+    const download = rangeSlider( {label: 'Download', info: bandwidth.download, range: { min:0, max: 20}, value: 8 }, make_protocol('download') )
+    const upload = rangeSlider({ label: 'Upload', info: bandwidth.upload, range: { min:0, max: 5 }, value: 1 }, make_protocol('upload') )
     
     const content = bel`
     <div class=${css.content}>
@@ -68,10 +49,8 @@ function demo() {
         ${upload}
     </div>
     `
-    // show logs
-    let terminal = bel`<div class=${css.terminal}></div>`
     // container
-    const container = wrap(content, terminal)
+    const container = wrap(content)
 
     document.addEventListener('DOMContentLoaded', () => {
         document.body.addEventListener('click', () => {
@@ -90,7 +69,6 @@ function demo() {
             <section class=${css.container}>
                 ${content}
             </section>
-            ${terminal}
         </div>
         `
         return container
@@ -140,7 +118,7 @@ body {
 
 document.body.append(demo())
 }).call(this)}).call(this,"/demo/demo.js")
-},{"..":30,"../src/node_modules/getSystemInfo":31,"bel":3,"csjs-inject":6,"message-maker":24,"path":28,"ui-domlog":23}],2:[function(require,module,exports){
+},{"..":31,"../src/node_modules/getSystemInfo":32,"bel":3,"csjs-inject":6,"message-maker":25,"path":29}],2:[function(require,module,exports){
 var trailingNewlineRegex = /\n[\s]+$/
 var leadingNewlineRegex = /^\n[\s]+/
 var trailingSpaceRegex = /[\s]+$/
@@ -374,7 +352,7 @@ module.exports = hyperx(belCreateElement, {comments: true})
 module.exports.default = module.exports
 module.exports.createElement = belCreateElement
 
-},{"./appendChild":2,"hyperx":26}],4:[function(require,module,exports){
+},{"./appendChild":2,"hyperx":27}],4:[function(require,module,exports){
 (function (global){(function (){
 'use strict';
 
@@ -393,7 +371,7 @@ function csjsInserter() {
 module.exports = csjsInserter;
 
 }).call(this)}).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"csjs":9,"insert-css":27}],5:[function(require,module,exports){
+},{"csjs":9,"insert-css":28}],5:[function(require,module,exports){
 'use strict';
 
 module.exports = require('csjs/get-css');
@@ -871,84 +849,264 @@ function scopify(css, ignores) {
 }
 
 },{"./regex":19,"./replace-animations":20,"./scoped-name":21}],23:[function(require,module,exports){
-const bel = require('bel')
-const csjs = require('csjs-inject')
+const style_sheet = require('support-style-sheet')
+const message_maker = require('message-maker')
 
-module.exports = domlog
+var id = 0
 
-let count = 1
+module.exports = i_input
 
-function domlog (message) {
-    const { page = 'demo', from, flow, type, body, action, filename, line } = message
-    const log = bel`
-    <div class=${css.log} role="log">
-        <div class=${css.badge}>${count}</div>
-        <div class="${css.output} ${type === 'error' ? css.error : '' }">
-            <span class=${css.page}>${page}</span> 
-            <span class=${css.flow}>${flow}</span>
-            <span class=${css.from}>${from}</span>
-            <span class=${css.type}>${type}</span>
-            <span class=${css.info}>${typeof body === 'string' ? body : JSON.stringify(body, ["swarm", "feeds", "links"], 3)}</span>
-        </div>
-        <div class=${css['code-line']}>${filename}:${line}</div>
-    </div>`
-    count++
-    return log
-    
+var current_theme
+var current_style
+const default_theme = {
+    props: {
+        '--b': '0, 0%',
+        '--r': '100%, 50%',
+        '--color-white': 'var(--b), 100%',
+        '--color-black': 'var(--b), 0%',
+        '--color-blue': '214, var(--r)',
+        '--size14': '1.4rem',
+        '--size16': '1.6rem',
+        '--weight200': '200',
+        '--primary-color': 'var(--color-black)',
+        '--primary-button-radius': '8px',
+        '--size': 'var(--size14)',
+        '--size-hover': 'var(--size)',
+        '--current-size': 'var(--size)',
+        '--bold': 'var(--weight200)',
+        '--color':'var(--primary-color)',
+        '--bg-color': 'var(--color-white)',
+        '--width': 'unset',
+        '--height': '32px',
+        '--opacity': '1',
+        '--padding': '8px 12px',
+        '--border-width': '0px',
+        '--border-style': 'solid',
+        '--border-color': 'var(--primary-color)',
+        '--border-opacity': '1',
+        '--border': 'var(--border-width) var(--border-style) hsla(var(--border-color), var(--border-opacity))',
+        '--border-radius': 'var(--primary-button-radius)',
+        '--fill': 'var(--primary-color)',
+        '--fill-hover': 'var(--color-white)',
+        '--icon-size': 'var(--size16)',
+        '--shadow-xy': '0 0',
+        '--shadow-blur': '8px',
+        '--shadow-color': 'var(--color-black)',
+        '--shadow-opacity': '0',
+        '--shadow-opacity-focus': '0.3',
+    },
+    style: `
+        .input-field {
+            background-color: pink;
+        }
+    `,
+    classList: 'input-field'
 }
-const css = csjs`
-.log {
-    display: grid;
-    grid-template-rows: auto;
-    grid-template-columns: auto 1fr auto;
-    align-items: center;
-    padding: 2px 12px 0 0;
-    border-bottom: 1px solid #333;
+
+i_input.docs = () => { return { opts: { value:0, min: 0, max: 100, step: 1, placeholder:'', theme: default_theme } } }
+
+function i_input (opts, protocol) {
+    const { value = 0, min = 0, max = 100, step = 1, placeholder = '', theme = {} } = opts
+    var current_value = value
+    let [int, dec] = split_val(step)
+    const el = document.createElement('i-input')
+    const shadow = el.attachShadow({mode: 'closed'})
+    const input = document.createElement('input')
+    current_theme = theme
+    update_style(current_theme, shadow)
+// ------------------------------------------------
+    const myaddress = `i-input-${id++}` // unique
+    const inbox = {}
+    const outbox = {}
+    const recipients = {}
+    const names = {}
+    const message_id = to => ( outbox[to] = 1 + (outbox[to]||0) )
+
+    const {notify, address} = protocol(myaddress, listen)
+    names[address] = recipients['parent'] = { name: 'parent', notify, address, make: message_maker(myaddress) }
+    recipients['parent'] = { notify, address, make: message_maker(myaddress) }
+
+    let make = message_maker(myaddress) // @TODO: replace flow with myaddress/myaddress
+    notify(make({ to: address, type: 'ready' }))
+
+    function listen (msg) {
+        const { head, refs, type, data, meta } = msg // listen to msg
+        inbox[head.join('/')] = msg                  // store msg
+        const [from, to, msg_id] = head
+        const { make } = recipients['parent']
+        // todo: what happens when we receive the message
+        const name = names[from].name
+        if (name === 'parent' && type === 'onchange') {
+            current_value = data.value
+            input.value = current_value
+        }
+        if (type === 'help') {
+            const { notify: name_notify, make: name_make, address: name_address } = recipients[name]
+            name_notify(name_make({ to: name_address, type: 'help', data: { theme: current_theme }, refs: { cause: head }}))
+        }
+        else if (type === 'theme_update' && data.theme) {
+            current_theme = JSON.parse(data.theme.replace(/\n/g, ''))
+            update_style(current_theme, shadow)
+        }
+    }
+// ------------------------------------------------
+    set_attributes(el, input)
+    shadow.append(input)
+    input.onwheel = (e) => e.preventDefault()
+    input.onblur = (e) => handle_blur(e, input) // when element loses focus
+    // Safari doesn't support onfocus @TODO use select()
+    input.onclick = (e) => handle_click(e, input)
+    input.onfocus = (e) => handle_focus(e, input)
+    input.onkeydown = (e) => handle_keydown_change(e, input)
+    input.onkeyup = (e) => handle_keyup_change(e, input)
+    input.onwheel = (e) => handle_wheel(e, input)
+// ---------------------------------------------------------------
+    function set_attributes (el, input) { // all set attributes go here
+        input.type = 'number'
+        input.name = myaddress
+        input.value = value
+        input.placeholder = placeholder
+        input.min = min
+        input.max = max
+        input.setAttribute('aria-myaddress', 'input')
+    }
+    function increase (e, input, val) {
+        e.preventDefault()
+        let [step_i, step_d] = split_val(step)
+        let [val_i, val_d] = split_val(input.value)
+        var new_val_d = Number(val_d) + Number(step_d)
+        var new_val_i = Number(val_i) + Number(step_i)
+        const d_places = step_d > val_d ? step_d.length : val_d.length
+        const d_full = Math.pow(10, d_places)
+        if (new_val_d >= d_full) {
+            new_val_d = new_val_d - d_full
+            new_val_i = new_val_i + 1
+        }
+        let new_val = new_val_d === 0 ? `${new_val_i}` : `${new_val_i}.${new_val_d}`
+        input.value = new_val > max ? max.toString() : new_val
+        current_value = input.value
+        notify( make({to: address, type: 'onchange', data: { value: current_value }}))
+    }
+    function decrease (e, input, val) {
+        e.preventDefault()
+        let [step_i, step_d] = split_val(step)
+        let [val_i, val_d] = split_val(val)
+        let step_len = step_d.length
+        let val_len = val_d.length
+        var new_val_d = Number(val_d) - Number(step_d)
+        var new_val_i = Number(val_i) - Number(step_i)
+        const d_places = step_d > val_d ? step_d.length : val_d.length
+        const d_full = Math.pow(10, d_places)
+        if (new_val_d <= 0) {
+            new_val_d = new_val_d === 0 ? 0 : d_full + new_val_d
+            new_val_i = new_val_i - 1
+        }
+        let new_val = new_val_d === 0 ? `${new_val_i}` : `${new_val_i}.${new_val_d}`
+        input.value = new_val < min ? min.toString() : new_val
+        current_value = input.value
+        notify(make({to: address, type: 'onchange', data: { value: current_value }}))
+    }
+    // event handlers
+    function handle_click (e, input) { e.target.select() }
+    function handle_focus (e, input) {}
+    function handle_blur (e, input) {
+        if (input.value === '') return
+        notify(make({to: address, type: 'onblur', data: { value: current_value }}))
+    }
+    function handle_wheel (e, input) {
+        const target = e.target
+        const val = input.value === '' ? 0 : input.value
+        let mousewheelevt = (/Firefox/i.test(navigator.userAgent))? "DOMMouseScroll" : "mousewheel"
+        if (mousewheelevt === "mousewheel") e.wheelDelta > 0 ? increase(e, input, val) : decrease(e, input, val)
+        else e.deltaY > 0 ?  increase(e, input, val) : decrease(e, input, val)
+    }
+    function handle_keydown_change (e, input) {
+        const val = input.value === '' ? 0 : input.value
+        const key = e.key
+        const code = e.keyCode || e.charCode   
+        if (code === 13 || key === 'Enter') input.blur()
+        if (code === 38 || key === 'ArrowUp') increase(e, input, val)
+        if (code === 40 || key === 'ArrowDown' ) decrease(e, input, val)
+    }
+    function handle_keyup_change (e, input) {
+        const val = input.value === '' ? 0 : input.value
+        if (val < min || val > max) e.preventDefault()
+        if (val > max) input.value = max
+        if (val < min) input.value = min
+        current_value = input.value
+        notify(make({to: address, type: 'onchange', data: { value: current_value }}))
+    }
+    function update_style (current_theme, shadow) {
+        const { style: custom_style = '', props = {}, grid = {}, classList = '' } = current_theme
+        if (current_theme.classList?.length) input.setAttribute('class', current_theme.classList)
+        current_style =  `
+        :host(i-input) {
+          ${Object.keys(default_theme.props).map(key => `${key}: ${props[key] || default_theme.props[key]};`).join('\n')}
+          width: var(--width);
+          max-width: 100%;
+          display: grid;
+        }
+        input {
+            --shadow-opacity: 0;
+            text-align: left;
+            align-items: center;
+            font-size: var(--size);
+            font-weight: var(--bold);
+            color: hsl( var(--color) );
+            background-color: hsla( var(--bg-color), var(--opacity) );
+            border: var(--border);
+            border-radius: var(--border-radius);
+            padding: var(--padding);
+            transition: font-size .3s, color .3s, background-color .3s, box-shadow .3s ease-in-out;
+            outline: none;
+            box-shadow: var(--shadow-xy) var(--shadow-blur) hsla( var(--shadow-color), var(--shadow-opacity));;
+            -moz-appearance: textfield;
+        }
+        :focus {
+            --shadow-opacity: var(--shadow-opacity-focus);
+            font-size: var(--current-size);
+        }
+        input::-webkit-outer-spin-button, 
+        input::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+        }
+        ${custom_style}
+        `
+        style_sheet(shadow, current_style)
+    }
+
+    // helpers
+    function split_val (val) {
+        let [i, d] = val.toString().split('.')
+        // if (i or d) === undefined, make d euqal to 0
+        if (i === '') i = '0'
+        if (d === void 0) d = '0'
+        return [i, d]
+    }
+
+// ---------------------------------------------------------------
+    return el
+// ---------------------------------------------------------------
 }
-.log:last-child, .log:last-child .page, .log:last-child .flow, .log:last-child .type {
-    color: #FFF500;
-    font-weight: bold;
+
+
+},{"message-maker":25,"support-style-sheet":24}],24:[function(require,module,exports){
+module.exports = support_style_sheet
+function support_style_sheet (root, style) {
+    return (() => {
+        try {
+            const sheet = new CSSStyleSheet()
+            sheet.replaceSync(style)
+            root.adoptedStyleSheets = [sheet]
+            return true 
+        } catch (error) { 
+            const inject_style = `<style>${style}</style>`
+            root.innerHTML = `${inject_style}`
+            return false
+        }
+    })()
 }
-.output {}
-.badge {
-    background-color: #333;
-    padding: 6px;
-    margin-right: 10px;
-    font-size: 14px;
-    display: inline-block;
-}
-.code-line {}
-.error {
-    
-}
-.error .type {
-    padding: 2px 6px;
-    color: white;
-    background-color: #AC0000;
-    border-radius: 2px;
-}
-.error .info {
-    color: #FF2626;
-}
-.page {
-    display: inline-block;
-    color: rgba(255,255,255,.75);
-    background-color: #2A2E30;
-    padding: 4px 6px;
-    border-radius: 4px;
-}
-.flow {
-    color: #1DA5FF;
-}
-.from {
-    color: #fff;
-}
-.type {
-    color: #FFB14A;
-}
-.info {}
-`
-},{"bel":3,"csjs-inject":6}],24:[function(require,module,exports){
+},{}],25:[function(require,module,exports){
 module.exports = function message_maker (from) {
   let msg_id = 0
   return function make ({to, type, data = null, refs = {} }) {
@@ -956,7 +1114,7 @@ module.exports = function message_maker (from) {
       return { head: [from, to, msg_id++], refs, type, data, meta: { stack }}
   }
 }
-},{}],25:[function(require,module,exports){
+},{}],26:[function(require,module,exports){
 module.exports = attributeToProperty
 
 var transform = {
@@ -977,7 +1135,7 @@ function attributeToProperty (h) {
   }
 }
 
-},{}],26:[function(require,module,exports){
+},{}],27:[function(require,module,exports){
 var attrToProp = require('hyperscript-attribute-to-property')
 
 var VAR = 0, TEXT = 1, OPEN = 2, CLOSE = 3, ATTR = 4
@@ -1274,7 +1432,7 @@ var closeRE = RegExp('^(' + [
 ].join('|') + ')(?:[\.#][a-zA-Z0-9\u007F-\uFFFF_:-]+)*$')
 function selfClosing (tag) { return closeRE.test(tag) }
 
-},{"hyperscript-attribute-to-property":25}],27:[function(require,module,exports){
+},{"hyperscript-attribute-to-property":26}],28:[function(require,module,exports){
 var inserted = {};
 
 module.exports = function (css, options) {
@@ -1298,7 +1456,7 @@ module.exports = function (css, options) {
     }
 };
 
-},{}],28:[function(require,module,exports){
+},{}],29:[function(require,module,exports){
 (function (process){(function (){
 // 'path' module extracted from Node.js v8.11.1 (only the posix part)
 // transplited with Babel
@@ -1831,7 +1989,7 @@ posix.posix = posix;
 module.exports = posix;
 
 }).call(this)}).call(this,require('_process'))
-},{"_process":29}],29:[function(require,module,exports){
+},{"_process":30}],30:[function(require,module,exports){
 // shim for using process in browser
 var process = module.exports = {};
 
@@ -2017,19 +2175,39 @@ process.chdir = function (dir) {
 };
 process.umask = function() { return 0; };
 
-},{}],30:[function(require,module,exports){
+},{}],31:[function(require,module,exports){
 (function (__filename){(function (){
 const bel = require('bel')
-const csjs = require('csjs-inject')
+const style_sheet = require('support-style-sheet')
 const path = require('path')
 const filename = path.basename(__filename)
 const message_maker = require('message-maker')
+const input_number = require('datdot-ui-input-number')
 
 var id = 0
+var count = 0
 
-module.exports = rangeSlider
+module.exports = range_slider
 
-function rangeSlider({page, flow, name = 'range-slider', info, range, label, setValue = 0}, parent_protocol) {
+const default_theme = {
+    props: {},
+    grid: {},
+    style: ``,
+    theme: {}
+}
+range_slider.help = () => { return { opts: { info: '32GB', range: { min: 0, max: 32}, label: 'GB', value: 0, theme: default_theme } } }
+
+function range_slider({ info, range: { min, max }, label, value = 0, theme = {} }, parent_protocol) {
+    const state = {
+        opts: {
+            info,
+            range: { min, max },
+            label,
+            value,
+            theme
+        },
+        style: ``
+    }
 // ---------------------------------------------
     const myaddress = `${__filename}-${id++}`
     const inbox = {}
@@ -2042,449 +2220,300 @@ function rangeSlider({page, flow, name = 'range-slider', info, range, label, set
     names[address] = recipients['parent'] = { name: 'parent', notify, address, make: message_maker(myaddress) }
     notify(recipients['parent'].make({ to: address, type: 'ready', refs: {} }))
 
+    function make_protocol (name) {
+        return function protocol (address, notify) {
+            names[address] = recipients[name] = { name, address, notify, make: message_maker(myaddress) }
+            return { notify: listen, address: myaddress }
+        }
+    }
+
     function listen (msg) {
-        console.log('New message', { msg })
+        const { head, refs, type, data, meta } = msg // listen to msg
+        inbox[head.join('/')] = msg                  // store msg
+        const [from, to, msg_id] = head
+        const name = names[from].name
+        if (names[from].name.includes('input')) {
+            if (type === 'onchange') { update_range_slider(data.value) }
+        }
+        if (type === 'help') {
+            const { notify: name_notify, make: name_make, address: name_address } = recipients[name]
+            name_notify(name_make({ to: name_address, type: 'help', data: { state }, refs: { cause: head }}))
+        }
     }
 // ---------------------------------------------
-    const widget = 'ui-range-slider'
-    const { min, max } = range
-    let currentValue = setValue
-    let input = ui_input(label, currentValue)
-    let fill = bel`<div class=${css.fill}></span>`
+
+    let currentValue = value
+    const input_name = `input-${count++}`
+    let input = input_number({ value:currentValue, min, max, step: 1, 
+        theme: { 
+            props: {
+                "--border-width": "1px",
+                "--border-style": "solid",
+                "--border-color": "rgba(187, 187, 187, 1)",
+                "--pading": "4px 8px",
+                "--border-radius": "4px",
+                "--size": "0.9rem",
+                "--width": "90%"
+            },
+    } }, make_protocol(input_name))
+    
+    let fill = document.createElement('span')
+    fill.setAttribute('class', 'fill')
     let repeatLine = 1000
-    let line = makeLine(repeatLine)
-    let bar = bel`<div class=${css.bar}>${fill}${line}</div>`
-    let sliderRange = ui_range_slider(currentValue)
-
+    let line = make_scale_lines(repeatLine)
     line.style.gridTemplateColumns = `repeat(${repeatLine}, 20px)`
+    let bar = document.createElement('span')
+    bar.setAttribute('class', 'bar')
+    bar.append(fill, line)
+    setBar(currentValue)
 
-    const el = bel`
-    <div class=${css['range-slider']} aria-label=${name}>
-        <div class=${css.field}>
-            ${ui_label()}
-            <div class=${css['input-form']}>
+    const el = document.createElement('i-input')
+    const shadow = el.attachShadow({mode: 'closed'})
+    const sliderRange = document.createElement('input')
+        
+    sliderRange.setAttribute("type", "range")
+    sliderRange.setAttribute('aria-label', label)
+    sliderRange.setAttribute('class', 'range')
+    sliderRange.setAttribute('tabindex', 0)
+    sliderRange.min = min
+    sliderRange.max = max
+    sliderRange.value = currentValue
+
+    shadow.append(bel`
+    <div class="range-slider" aria-label=${label}>
+        <div class="field">
+            <label for=${label} class="label">${label}</label>
+            <div class="input-form">
                 ${input}
-                <span class=${css.unit}>${name === 'cpu' ? ' %' : name === 'ram' ? ' GB' : ' MB'}</span>
+                <span class="unit">${label.toLowerCase() === 'cpu' ? ' %' : label.toLowerCase() === 'ram' ? ' GB' : ' MB'}</span>
             </div>
-            <span class=${css.info}>${info}</span>
+            <span class="info">${info}</span>
         </div>
-        <div class=${css['slider-container']}>
+        <div class="slider-container">
             ${bar}${sliderRange}
         </div>
-    </div>`
+    </div>`)
 
-    input.onclick = handleClick
-    input.onkeyup = handleKeyup
-    input.onkeydown = handleKeydown
-    input.onkeypress = handleKeypress
-    input.onchange = handleChange
-    input.onfocus = handleFocus
-    input.onblur = handleBlur
     sliderRange.onclick = handleSliderClick
     sliderRange.oninput = handleSliderRangeInput
-    sliderRange.onkeydown = handleKey
     sliderRange.onchange = handleChange
-    sliderRange.onfocus = handleFocus
     sliderRange.ontouchstart = handleTouchStart
+    sliderRange.onwheel = handleWheel
 
-    let mousewheelevt = (/Firefox/i.test(navigator.userAgent))? "DOMMouseScroll" : "mousewheel"
-    if (mousewheelevt === "mousewheel") {
-        input.onmousewheel = handleMousewheel
-        sliderRange.onmousewheel = handleMousewheel
-    } else {
-        input.onwheel = handleWheel
-        sliderRange.onwheel = handleWheel
-    }
-
-    return el
-
-    /*************************
-    * ------- Layout --------
-    *************************/
-    // display scale lines
-    function makeLine (count) {
-        let scale = bel`<div class=${css.scale}></div>`
+    // ------- layout --------
+    function make_scale_lines (count) {
+        let scale = document.createElement('div')
+        scale.setAttribute('class', 'scale')
         for (let i = 0; i < count; i++) {
-            let line = bel`<span class='${css.line}'></span>`
+            let line = document.createElement('span')
+            line.setAttribute('class', 'line')
             scale.append(line)
         }
         return scale
     }
-    // convert width to percentage
-    function setBar (value) {
-        return fill.style.width = `${(value/max)*100}%`
-    }
+    function setBar (value) { return fill.style.width = `${(value/max)*100}%` } // convert width to percentage
 
-    function ui_label () {
-        return bel`<label for=${name} class=${css.label}>${label}</label>`
-    }
-
-    function ui_input (label, val) {
-        return bel`<input class=${css['field-input']} type='number' min=${min} max=${max} aria-live="true" value=${val} aria-label=${label} name=${label} tabindex="0">`
-    }
-
-    function ui_range_slider (val) {
-        setBar(currentValue)
-        return bel`<input class=${css.range} type='range' min=${min} max=${max} step="1" value=${val} aria-label="${name}-range" name="${name}-range" tabindex="0">`
-    }
-
-    /*******************************
-    * ------- Condicitions --------
-    *******************************/
-    // ArrowUp
-    function isIncreaseUp ({keyCode}) {
-        if (keyCode === 38) return true
-    }
-    // ArrowRight
-    function isIncreaseRight ({keyCode}) {
-        if (keyCode === 39) return true
-    }
-    // ArrowLeft or ArrowDown
-    function isDecreaseLeft ({keyCode}) {
-        if (keyCode === 37) return true
-    }
-    function isDecreaseDown ({keyCode}) {
-        if (keyCode === 40) return true
-    }
-    // Shift + ArrowUp
-    function isIncreaseMultipleTimesUp ({keyCode, shiftKey}) {
-        if (keyCode === 38 && shiftKey) return true
-    }
-    // Shift + ArrowRight
-    function isIncreaseMultipleTimesRight ({keyCode, shiftKey}) {
-        if (keyCode === 39 && shiftKey) return true
-    }
-    // Shift + ArrowLeft
-    function isDecreaseMultipleTimesLeft ({keyCode, shiftKey}) {
-        if (keyCode === 37 && shiftKey ) return true
-    }
-    // Shift + ArrowDown
-    function isDecreaseMultipleTimesDown ({keyCode, shiftKey}) {
-        if (keyCode === 40 && shiftKey) return true
-    }
-    // Number 0-9
-    function isNumberKey ({keyCode}) {
-        if (keyCode >= 48 && keyCode <= 57) return true
-    }
-    // Enter
-    function isEnterKey ({keyCode}) {
-        if (keyCode === 13) return true
-    }
-    // backspace/delete
-    function isDelete ({keyCode}) {
-        if (keyCode === 8) return true
-    }
-    // tab
-    function isTab ({keyCode}) {
-        if (keyCode === 9) return true
-    }
-    /*************************
-    * ------- Actions --------
-    *************************/
-    // wheel scroll
+    // ------- handlers --------
     function handleWheel (event) {
         const target = event.target
-        if (event.deltaY < 0) return actionCalculate(target, -1)
-        if (event.deltaY > 0) return actionCalculate(target, 1)
+        const step = 1
+        let mousewheelevt = (/Firefox/i.test(navigator.userAgent))? "DOMMouseScroll" : "mousewheel"
+        if (mousewheelevt === "mousewheel") {
+            event.wheelDelta > 0 ?  update_range_slider(currentValue + step) : update_range_slider(currentValue - step)
+        } else {
+            event.deltaY > 0 ? update_range_slider(currentValue + step) : update_range_slider(currentValue - step)
+        }
     }
-
-    function handleMousewheel (event) {
-        const wDelta = event.wheelDelta < 0 ? 'down' : 'up'
-        const target = event.target
-        if (wDelta === 'up') return actionCalculate(target, 1)
-        if (wDelta === 'down') return actionCalculate(target, -1)
+    function update_range_slider (value) {
+        if (value > max) value = max
+        if (value < min) value = min
+        currentValue = value
+        sliderRange.value = value
+        setBar(value)
+        const { make } = recipients['parent']
+        notify(make({ to: address, type: 'changed', data: { value: currentValue } }))
+        const { notify: input_notify, address: input_address, make: input_make } = recipients[input_name]
+        input_notify(input_make({ to: input_address, type: 'onchange', data: { value: currentValue } }))
     }
-    
-    function actionCalculate (target, number) {
-        let total = Number(target.value) + number
-        currentValue = total
-        if (currentValue > max) currentValue = max
-        if (currentValue < 0) currentValue = 0
-        input.value = currentValue
-        sliderRange.value = currentValue
-        setBar( currentValue )
-        const { notify, address, make } = recipients['parent']
-        return notify(make({ to: address, type: 'changed', data: { currentValue, filename, line: 166 } }))
-    }
-
     function handleTouchStart (event) {
         const target = event.target
         target.focus()
     }
-
     function handleSliderClick (event) {
         const target = event.target
     }
-
     function handleSliderRangeInput (event) {
         const target = event.target
         const val = Number(target.value)
         currentValue = val
         input.value = val
         setBar(val)
+        const { make } = recipients['parent']
+        notify(make({ to: address, type: 'changed', data: { value: currentValue } }))
+        const { notify: input_notify, address: input_address, make: input_make } = recipients[input_name]
+        input_notify(input_make({ to: input_address, type: 'onchange', data: { value: currentValue } }))
     }
-
-    function handleClick (event) {
-        const target = event.target
-        target.select()
-    }
-
-    function handleFocus (event) {
-        const target = event.target
-    }
-
-    function handleBlur (event) {
-        const target = event.target
-        target.blur()
-    }
-    
-    function handleKeypress (event) {
-        const target = event.target
-        const keyCode = event.keyCode
-        if (currentValue > max && keyCode >= 48 && keyCode <= 57 || target.value === 0 && keyCode === 48) {
-            return event.preventDefault()
-        }
-    }
-
-    function handleKey (event) {
-        const { target } = event
-        if (isIncreaseMultipleTimes(event)) {
-            return actionCalculate(target, 9)
-        }
-        if (isDecreaseMultipleTimes(event)) {
-            return actionCalculate(target, -9)
-        }
-    }
-
-    function handleKeyup (event) {
-        const target = event.target
-        const val = Number(target.value)
-        currentValue = val
-        if  ( currentValue >= max ) currentValue = max
-        if  ( currentValue <= min ) currentValue = min
-        target.value = currentValue
-        sliderRange.value = currentValue
-        setBar( currentValue )
-        return 
-    }
-
-    function handleKeydown (event) {
-        const target = event.target
-        const val = Number(target.value)
-        const keyCode = event.keyCode
-        currentValue = val
-        const { notify, address, make } = recipients['parent']
-        notify(make({ to: address, type: 'pressed', data: { target: `${event.code}(${keyCode})`, filename, line: 223 } }))
-        // number 0-9
-        if (isNumberKey(event)) return
-        // enter
-        if (isEnterKey(event))  { 
-            target.blur()
-            return notify(make({ to: address, type: 'changed', data: { currentValue, filename, line: 229 } }))
-        }
-        // increase by Shift + ArrowUp
-        if (isIncreaseMultipleTimesUp(event)) return actionCalculate(target, 9)
-        // increase by Shift + ArrowRight
-        if (isIncreaseMultipleTimesRight(event)) return actionCalculate(target, 10)
-        // decrease by Shift + ArrowLeft
-        if (isDecreaseMultipleTimesLeft(event)) return actionCalculate(target, -10)
-        // decrease by Shift + ArrowDown
-        if (isDecreaseMultipleTimesDown(event)) return actionCalculate(target, -9)
-        // increase by ArrowUp or decrease by ArrowDown
-        if (isIncreaseUp(event) || isDecreaseDown(event) ) return actionCalculate(target, 0)
-        if (isIncreaseRight(event)) return actionCalculate(target, 1)
-        // decrease by ArrowLeft
-        if (isDecreaseLeft(event)) return actionCalculate(target, -1)
-        // delete or backspace
-        if (isDelete(event)) return target.value.split('').splice(-1, 1)
-        // tab
-        if (isTab(event)) return
-
-        return event.preventDefault()
-    }
-
     function handleChange (event) {
-        /***
         // todo: make an array list for percentage(%) using 
-        ***/
-        const target = event.target
-        let val = Number(target.value)
-        currentValue = val
+        currentValue = Number(event.target.value)
         sliderRange.value = currentValue
         setBar(currentValue)
-        const { notify, address, make } = recipients['parent']
-        return notify(make({ to: address, type: 'changed', data: { currentValue, filename, line: 261 } }))
+        const { make } = recipients['parent']
+        notify(make({ to: address, type: 'changed', data: { currentValue } }))
+        const { notify: input_notify, address: input_address, make: input_make } = recipients[input_name]
+        input_notify(input_make({ to: input_address, type: 'onchange', data: { value: currentValue } }))
     }
     
-    /*************************
-    * ------ Receivers -------
-    *************************/
-    function receive(message) {
-        const { page, from, flow, type, action, body } = message
-        // console.log('received from main component', message )
-    }
-}
+    state.style = `
+        :host(i-input) {
 
-const css = csjs`
-.range-slider {
-    display: grid;
+        }
+        .range-slider {
+            display: grid;
+        }
+        .field {
+            display: grid;
+            grid-template-rows: auto;
+            grid-template-columns: auto 1fr auto;
+            align-items: center;
+        }
+        .range-slider:active .label, 
+        .range-slider:focus .label, 
+        .range-slider:focus-within .label {
+            color: rgba(94, 176, 245, 1);
+        }
+        .label {
+            margin-right: 12px;
+            color: #707070;
+            transition: color .3s linear;
+        }
+        .info {
+            color: #707070;
+        }
+        .slider-container {
+            position: relative;
+        }
+        .bar {
+            position: absolute;
+            z-index: 1;
+            left: 3px;
+            top: 12px;
+            width: 100%;
+            height: 10px;
+            background-color: rgba(221, 221, 221, 1);
+            border-radius: 50px;
+            overflow: hidden;
+        }
+        .fill {
+            display: block;
+            width: 0;
+            height: 100%;
+            background-color: #AAA;
+            border-radius: 50px;
+            transition: background-color 0.3s ease-in-out;
+        }
+        .range-slider:active .bar .fill,
+        .range-slider:focus .bar .fill, 
+        .range-slider:focus-within .bar .fill {
+            background-color: #5EB0F5;
+        }
+        .range-slider:focus .bar .fill:hover, 
+        .range-slider:focus-within .bar .fill:hover {
+            background-color: #5EB0F5
+        }
+        .scale {
+            position: absolute;
+            top: 2px;
+            left: 0;
+            z-index: -1;
+            display: grid;
+            grid-template-rows: auto;
+        }
+        .line {
+            display: block;
+            width: 2px;
+            height: 6px;
+            background-color: #fff;
+        }
+        .range { 
+            position: relative;
+            z-index: 2;
+            -webkit-appearance: none;
+            background-color: transparent;
+            width: 100%;
+            height: 30px;
+            outline: none;
+        }
+        .range::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background-color: #fff;
+            border: 1px solid #EAEAEA;
+            outline: none;
+            cursor: pointer;
+            box-shadow: 0 3px 6px rgba(0, 0, 0, .4);
+            transition: background-color .3s, box-shadow .15s linear;
+        }
+        .range::-webkit-slider-thumb:hover {
+            box-shadow: 0 0 0 14px rgba(94, 176, 245, .8);
+        }
+        .range::-webkit-slider-thumb:focus,
+        .range::-webkit-slider-thumb:focus-within {
+            box-shadow: 0 0 0 14px rgba(94, 176, 245, .8);
+        }
+        .range::-moz-range-thumb {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background-color: #fff;
+            border: 1px solid #EAEAEA;
+            outline: none;
+            cursor: pointer;
+            box-shadow: 0 3px 6px rgba(0, 0, 0, .4);
+            transition: background-color .3s, box-shadow .15s linear;
+        }
+        .range::-moz-range-thumb:hover {
+            box-shadow: 0 0 0 14px rgba(0, 0, 0, .25);
+        }
+        .range::-moz-range-thumb:focus,
+        .range::-moz-range-thumb:focus-within {
+            box-shadow: 0 0 0 14px rgba(94, 176, 245, .8);
+        }
+        .range::-ms-thumb {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background-color: #fff;
+            border: 1px solid #EAEAEA;
+            outline: none;
+            cursor: pointer;
+            box-shadow: 0 6px 12px rgba(0, 0, 0, .25);
+            transition: background-color .3s, box-shadow .3s linear;
+        }
+        .range::-ms-thumb:hover {
+            box-shadow: 0 6px 12px rgba(0, 0, 0, .25);
+        }
+        .range::-ms-thumb:focus,
+        .range::-ms-thumb:focus-within {
+            box-shadow: 0 0 0 1px rgba(170, 170, 170,.8);
+        }
+        .input-form {
+            display: grid;
+            grid-template-rows: 1fr;
+            grid-template-columns: 80px auto;
+            justify-content: left;
+            align-items: center;
+            grid-gap: 5px;
+        }
+        .unit {}
+    `
+    style_sheet(shadow, state.style)
+    return el
 }
-.field {
-    display: grid;
-    grid-template-rows: auto;
-    grid-template-columns: auto 1fr auto;
-    align-items: center;
-}
-.range-slider:active .label, 
-.range-slider:focus .label, 
-.range-slider:focus-within .label {
-    color: rgba(94, 176, 245, 1);
-}
-.label {
-    margin-right: 12px;
-    color: #707070;
-    transition: color .3s linear;
-}
-.field-input {
-    width: 100%;
-    border: 1px solid rgba(187, 187, 187, 1);
-    padding: 4px 8px;
-    border-radius: 4px;
-    text-align: center;
-    font-size: 14px;
-    outline: none;
-}
-.field-input:focus, 
-.field-input:focus-within {
-    border-color: rgba(94, 176, 245, 1);
-}
-.field-input::selection {
-    background-color: rgba(188, 224, 253, 1);
-}
-.info {
-    color: #707070;
-}
-.slider-container {
-    position: relative;
-}
-.bar {
-    position: absolute;
-    z-index: 1;
-    left: 3px;
-    top: 12px;
-    width: 100%;
-    height: 10px;
-    background-color: rgba(221, 221, 221, 1);
-    border-radius: 50px;
-    overflow: hidden;
-}
-.fill {
-    display: block;
-    width: 0;
-    height: 100%;
-    background-color: #AAA;
-    border-radius: 50px;
-    transition: background-color 0.3s ease-in-out;
-}
-.range-slider:active .bar .fill,
-.range-slider:focus .bar .fill, 
-.range-slider:focus-within .bar .fill {
-    background-color: #5EB0F5;
-}
-.range-slider:focus .bar .fill:hover, 
-.range-slider:focus-within .bar .fill:hover {
-    background-color: #5EB0F5
-}
-.scale {
-    position: absolute;
-    top: 2px;
-    left: 0;
-    z-index: -1;
-    display: grid;
-    grid-template-rows: auto;
-}
-.line {
-    display: block;
-    width: 2px;
-    height: 6px;
-    background-color: #fff;
-}
-.range { 
-    position: relative;
-    z-index: 2;
-    -webkit-appearance: none;
-    background-color: transparent;
-    width: 100%;
-    height: 30px;
-    outline: none;
-}
-.range::-webkit-slider-thumb {
-    -webkit-appearance: none;
-    width: 20px;
-    height: 20px;
-    border-radius: 50%;
-    background-color: #fff;
-    border: 1px solid #EAEAEA;
-    outline: none;
-    cursor: pointer;
-    box-shadow: 0 3px 6px rgba(0, 0, 0, .4);
-    transition: background-color .3s, box-shadow .15s linear;
-}
-.range::-webkit-slider-thumb:hover {
-    box-shadow: 0 0 0 14px rgba(94, 176, 245, .8);
-}
-.range::-webkit-slider-thumb:focus,
-.range::-webkit-slider-thumb:focus-within {
-    box-shadow: 0 0 0 14px rgba(94, 176, 245, .8);
-}
-.range::-moz-range-thumb {
-    width: 20px;
-    height: 20px;
-    border-radius: 50%;
-    background-color: #fff;
-    border: 1px solid #EAEAEA;
-    outline: none;
-    cursor: pointer;
-    box-shadow: 0 3px 6px rgba(0, 0, 0, .4);
-    transition: background-color .3s, box-shadow .15s linear;
-}
-.range::-moz-range-thumb:hover {
-    box-shadow: 0 0 0 14px rgba(0, 0, 0, .25);
-}
-.range::-moz-range-thumb:focus,
-.range::-moz-range-thumb:focus-within {
-    box-shadow: 0 0 0 14px rgba(94, 176, 245, .8);
-}
-.range::-ms-thumb {
-    width: 20px;
-    height: 20px;
-    border-radius: 50%;
-    background-color: #fff;
-    border: 1px solid #EAEAEA;
-    outline: none;
-    cursor: pointer;
-    box-shadow: 0 6px 12px rgba(0, 0, 0, .25);
-    transition: background-color .3s, box-shadow .3s linear;
-}
-.range::-ms-thumb:hover {
-    box-shadow: 0 6px 12px rgba(0, 0, 0, .25);
-}
-.range::-ms-thumb:focus,
-.range::-ms-thumb:focus-within {
-    box-shadow: 0 0 0 1px rgba(170, 170, 170,.8);
-}
-.input-form {
-    display: grid;
-    grid-template-rows: 1fr;
-    grid-template-columns: 80px auto;
-    justify-content: left;
-    align-items: center;
-    grid-gap: 5px;
-}
-.unit {}
-`
 }).call(this)}).call(this,"/src/index.js")
-},{"bel":3,"csjs-inject":6,"message-maker":24,"path":28}],31:[function(require,module,exports){
+},{"bel":3,"datdot-ui-input-number":23,"message-maker":25,"path":29,"support-style-sheet":33}],32:[function(require,module,exports){
 module.exports = { getcpu, getram, getbandwidth }
 
 function getcpu () {
@@ -2500,4 +2529,6 @@ function getbandwidth() {
 }
 
 
-},{}]},{},[1]);
+},{}],33:[function(require,module,exports){
+arguments[4][24][0].apply(exports,arguments)
+},{"dup":24}]},{},[1]);

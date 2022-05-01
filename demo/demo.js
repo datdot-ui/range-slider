@@ -4,7 +4,6 @@ const rangeSlider = require('..')
 const path = require('path')
 const filename = path.basename(__filename)
 const { getcpu, getram, getbandwidth } = require('../src/node_modules/getSystemInfo')
-const domlog = require('ui-domlog')
 const message_maker = require('message-maker')
 
 var id = 0
@@ -32,31 +31,13 @@ function demo() {
         // send back ack
         const { notify, make, address } = names[from]
         notify(make({ to: address, type: 'ack', refs: { 'cause': head } }))
-        appendLog(msg)
-    }
-
-    // keep the scroll on bottom when the log displayed on the terminal
-    function appendLog (message) { 
-        makeLog(message)
-        .then( log => {
-            terminal.append(log)
-            terminal.scrollTop = terminal.scrollHeight
-        }
-    )}
-
-    async function makeLog (message) {
-        return await new Promise( (resolve, reject) => {
-            if (message === undefined) reject('no message import')
-            const log = domlog(message)
-            return resolve(log)
-        }).catch( err => { throw new Error(err) } )
     }
 // --------------------------------------------------------
-    const cpu = rangeSlider({page: 'JOBS', name: 'cpu', label: 'CPU', info: getcpu(), range: { min:0, max: 100 }}, make_protocol('cpu') )
-    const ram = rangeSlider({page: 'JOBS', name: 'ram', label: 'RAM', info: getram(), range: { min:0, max: 8 }, setValue: 1}, make_protocol('ram') )
+    const cpu = rangeSlider({ label: 'CPU', info: getcpu(), range: { min:0, max: 100 } }, make_protocol('cpu') )
+    const ram = rangeSlider({ label: 'RAM', info: getram(), range: { min:0, max: 8 }, value: 1 }, make_protocol('ram') )
     const bandwidth = getbandwidth()
-    const download = rangeSlider({page: 'JOBS', name: 'download', label: 'Download', info: bandwidth.download, range: { min:0, max: 20}, setValue: 8}, make_protocol('download') )
-    const upload = rangeSlider({page: 'JOBS', name: 'upload', label: 'Upload', info: bandwidth.upload, range: { min:0, max: 5 }, setValue: 1}, make_protocol('upload') )
+    const download = rangeSlider( {label: 'Download', info: bandwidth.download, range: { min:0, max: 20}, value: 8 }, make_protocol('download') )
+    const upload = rangeSlider({ label: 'Upload', info: bandwidth.upload, range: { min:0, max: 5 }, value: 1 }, make_protocol('upload') )
     
     const content = bel`
     <div class=${css.content}>
@@ -66,10 +47,8 @@ function demo() {
         ${upload}
     </div>
     `
-    // show logs
-    let terminal = bel`<div class=${css.terminal}></div>`
     // container
-    const container = wrap(content, terminal)
+    const container = wrap(content)
 
     document.addEventListener('DOMContentLoaded', () => {
         document.body.addEventListener('click', () => {
@@ -88,7 +67,6 @@ function demo() {
             <section class=${css.container}>
                 ${content}
             </section>
-            ${terminal}
         </div>
         `
         return container
