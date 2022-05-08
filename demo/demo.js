@@ -1,43 +1,61 @@
 const bel = require('bel')
 const csjs = require('csjs-inject')
-const rangeSlider = require('..')
-const path = require('path')
-const filename = path.basename(__filename)
+const range_slider = require('..')
 const { getcpu, getram, getbandwidth } = require('../src/node_modules/getSystemInfo')
-const message_maker = require('message-maker')
+const protocol_maker = require('protocol-maker')
 
 var id = 0
 
-function demo() {
-// --------------------------------------------------------
-    const myaddress = `${__filename}-${id++}`
-    const inbox = {}
-    const outbox = {}
-    const recipients = {}
-    const names = {}
-    const message_id = to => (outbox[to] = 1 + (outbox[to]||0))
 
-    function make_protocol (name) {
-        return function protocol (address, notify) {
-            names[address] = recipients[name] = { name, address, notify, make: message_maker(myaddress) }
-            return { notify: listen, address: myaddress }
-        }
-    }
+
+function imaginary_parent_of_demo () {
+    const followups = {}
+    const contacts = protocol_maker('demo-parent', message => {
+        console.log('ROOT', message)
+    })
+    const wire = contacts.add('demo')
+    document.body.append(demo(wire))
+
+
+    // // set theme for all range slider components
+    // const { notify, make, address } = contacts.by_name['demo']
+    // const help_msg = make({ to: address, type: 'help' })
+    // const head = help_msg.head.toString()
+    // followups[head] = (state) => {
+    //     const { opts: { theme }, contacts: contacts } = state
+    //     debugger
+    //     // const { make, address, notify } = contacts['input-0']
+    //     // notify(make({ to: address, type: 'theme', data: { theme: custom_theme }}))
+    // }
+    // notify(help_msg)
+    
+}
+
+
+
+
+
+
+function demo (parent_wire) {
+// --------------------------------------------------------
+    const initial_contacts = { 'parent': parent_wire }
+    const contacts = protocol_maker('demo', listen, initial_contacts)
     function listen (msg) {
         console.log('New message', { msg })
         const { head, refs, type, data, meta } = msg // receive msg
-        inbox[head.join('/')] = msg                  // store msg
         const [from] = head
-        // send back ack
-        const { notify, make, address } = names[from]
-        notify(make({ to: address, type: 'ack', refs: { 'cause': head } }))
+        if (type === 'help' && followups[refs.cause.toString()]) {
+            const cb = followups[refs.cause]
+            const { state } = data
+            cb(data.state)
+        }
     }
 // --------------------------------------------------------
-    const cpu = rangeSlider({ label: 'CPU', info: getcpu(), range: { min:0, max: 100 } }, make_protocol('cpu') )
-    const ram = rangeSlider({ label: 'RAM', info: getram(), range: { min:0, max: 8 }, value: 1 }, make_protocol('ram') )
+    const cpu = range_slider({ label: 'CPU', unit: '%', info: getcpu(), range: { min:0, max: 100 } }, contacts.add('cpu') )
+    const ram = range_slider({ label: 'RAM', unit: 'GB', info: getram(), range: { min:0, max: 8 }, value: 1 }, contacts.add('ram') )
     const bandwidth = getbandwidth()
-    const download = rangeSlider( {label: 'Download', info: bandwidth.download, range: { min:0, max: 20}, value: 8 }, make_protocol('download') )
-    const upload = rangeSlider({ label: 'Upload', info: bandwidth.upload, range: { min:0, max: 5 }, value: 1 }, make_protocol('upload') )
+    const download = range_slider( {label: 'Download', unit: 'MB', info: bandwidth.download, range: { min:0, max: 20}, value: 8 }, contacts.add('download') )
+    const upload = range_slider({ label: 'Upload', unit: 'MB', info: bandwidth.upload, range: { min:0, max: 5 }, value: 1 }, contacts.add('upload') )
     
     const content = bel`
     <div class=${css.content}>
@@ -113,5 +131,4 @@ body {
     overflow-y: auto;
 }
 `
-
-document.body.append(demo())
+imaginary_parent_of_demo()

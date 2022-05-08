@@ -5,7 +5,7 @@
   "1 debug pnpm:package-manifest": {
     "initial": {
       "name": "datdot-ui-range-slider",
-      "version": "0.0.0",
+      "version": "0.0.1-alpha",
       "description": "example ui components",
       "main": "src/index.js",
       "scripts": {
@@ -15,7 +15,7 @@
       },
       "repository": {
         "type": "git",
-        "url": "git+https://github.com/datdotorg/datdot-ui-range-slider.git"
+        "url": "git+https://github.com/datdot-ui/range-slider.git"
       },
       "keywords": [
         "datdot",
@@ -26,31 +26,51 @@
       ],
       "author": "",
       "license": "MIT",
-      "homepage": "https://github.com/datdotorg/datdot-ui-range-slider#readme",
+      "bugs": {
+        "url": "https://github.com/datdot-ui/range-slider/issues"
+      },
+      "homepage": "https://github.com/datdot-ui/range-slider#readme",
       "devDependencies": {
-        "ui-domlog": "github:datdotorg/ui-domlog"
+        "browserify": "^17.0.0",
+        "budo": "^11.7.0"
       },
       "dependencies": {
-        "async-os-utils": "^0.1.3",
         "bel": "^6.0.0",
         "csjs-inject": "^1.0.1",
-        "date-fns": "^2.16.1",
-        "debug": "^4.1.1",
-        "message-maker": "github:datdotorg/message-maker"
+        "datdot-ui-input-number": "github:datdot-ui/input-number#v0.0.3-alpha",
+        "protocol-maker": "github:datdotorg/message-maker#v0.0.1-alpha"
       }
     },
-    "prefix": "/home/ninabreznik/Documents/code/play/datdot/ui/datdot-ui-range-slider"
+    "prefix": "/home/ninabreznik/Documents/code/play/datdot/ui/range-slider"
   },
   "2 debug pnpm:context": {
     "currentLockfileExists": false,
     "storeDir": "/home/ninabreznik/.pnpm-store/v3",
-    "virtualStoreDir": "/home/ninabreznik/Documents/code/play/datdot/ui/datdot-ui-range-slider/node_modules/.pnpm"
+    "virtualStoreDir": "/home/ninabreznik/Documents/code/play/datdot/ui/range-slider/node_modules/.pnpm"
   },
   "3 debug pnpm:stage": {
-    "prefix": "/home/ninabreznik/Documents/code/play/datdot/ui/datdot-ui-range-slider",
+    "prefix": "/home/ninabreznik/Documents/code/play/datdot/ui/range-slider",
     "stage": "resolution_started"
   },
   "4 debug pnpm:_dependency_resolved": {
+    "resolution": "registry.npmjs.org/browserify/17.0.0",
+    "wanted": {
+      "dependentId": ".",
+      "name": "browserify",
+      "rawSpec": "^17.0.0"
+    }
+  },
+  "5 debug pnpm:progress": {
+    "packageId": "registry.npmjs.org/browserify/17.0.0",
+    "requester": "/home/ninabreznik/Documents/code/play/datdot/ui/range-slider",
+    "status": "resolved"
+  },
+  "6 debug pnpm:progress": {
+    "packageId": "registry.npmjs.org/browserify/17.0.0",
+    "requester": "/home/ninabreznik/Documents/code/play/datdot/ui/range-slider",
+    "status": "found_in_store"
+  },
+  "7 debug pnpm:_dependency_resolved": {
     "resolution": "registry.npmjs.org/csjs-inject/1.0.1",
     "wanted": {
       "dependentId": ".",
@@ -58,48 +78,12 @@
       "rawSpec": "^1.0.1"
     }
   },
-  "5 debug pnpm:progress": {
-    "packageId": "registry.npmjs.org/csjs-inject/1.0.1",
-    "requester": "/home/ninabreznik/Documents/code/play/datdot/ui/datdot-ui-range-slider",
-    "status": "resolved"
-  },
-  "6 debug pnpm:_dependency_resolved": {
-    "resolution": "registry.npmjs.org/debug/4.3.3",
-    "wanted": {
-      "dependentId": ".",
-      "name": "debug",
-      "rawSpec": "^4.1.1"
-    }
-  },
-  "7 debug pnpm:progress": {
-    "packageId": "registry.npmjs.org/debug/4.3.3",
-    "requester": "/home/ninabreznik/Documents/code/play/datdot/ui/datdot-ui-range-slider",
-    "status": "resolved"
-  },
   "8 debug pnpm:progress": {
     "packageId": "registry.npmjs.org/csjs-inject/1.0.1",
-    "requester": "/home/ninabreznik/Documents/code/play/datdot/ui/datdot-ui-range-slider",
-    "status": "found_in_store"
-  },
-  "9 debug pnpm:progress": {
-    "packageId": "registry.npmjs.org/debug/4.3.3",
-    "requester": "/home/ninabreznik/Documents/code/play/datdot/ui/datdot-ui-range-slider",
-    "status": "found_in_store"
-  },
-  "10 debug pnpm:_dependency_resolved": {
-    "resolution": "registry.npmjs.org/date-fns/2.28.0",
-    "wanted": {
-      "dependentId": ".",
-      "name": "date-fns",
-      "rawSpec": "^2.16.1"
-    }
-  },
-  "11 debug pnpm:progress": {
-    "packageId": "registry.npmjs.org/date-fns/2.28.0",
-    "requester": "/home/ninabreznik/Documents/code/play/datdot/ui/datdot-ui-range-slider",
+    "requester": "/home/ninabreznik/Documents/code/play/datdot/ui/range-slider",
     "status": "resolved"
   },
-  "12 debug pnpm:_dependency_resolved": {
+  "9 debug pnpm:_dependency_resolved": {
     "resolution": "registry.npmjs.org/bel/6.0.0",
     "wanted": {
       "dependentId": ".",
@@ -107,302 +91,57 @@
       "rawSpec": "^6.0.0"
     }
   },
-  "13 debug pnpm:deprecation": {
+  "10 debug pnpm:deprecation": {
     "deprecated": "Renamed to 'nanohtml'. 'npm install nanohtml'",
     "depth": 0,
     "pkgId": "registry.npmjs.org/bel/6.0.0",
     "pkgName": "bel",
     "pkgVersion": "6.0.0",
-    "prefix": "/home/ninabreznik/Documents/code/play/datdot/ui/datdot-ui-range-slider"
+    "prefix": "/home/ninabreznik/Documents/code/play/datdot/ui/range-slider"
   },
-  "14 debug pnpm:progress": {
+  "11 debug pnpm:progress": {
     "packageId": "registry.npmjs.org/bel/6.0.0",
-    "requester": "/home/ninabreznik/Documents/code/play/datdot/ui/datdot-ui-range-slider",
+    "requester": "/home/ninabreznik/Documents/code/play/datdot/ui/range-slider",
     "status": "resolved"
+  },
+  "12 debug pnpm:progress": {
+    "packageId": "registry.npmjs.org/csjs-inject/1.0.1",
+    "requester": "/home/ninabreznik/Documents/code/play/datdot/ui/range-slider",
+    "status": "found_in_store"
+  },
+  "13 debug pnpm:progress": {
+    "packageId": "registry.npmjs.org/bel/6.0.0",
+    "requester": "/home/ninabreznik/Documents/code/play/datdot/ui/range-slider",
+    "status": "found_in_store"
+  },
+  "14 debug pnpm:_dependency_resolved": {
+    "resolution": "registry.npmjs.org/budo/11.7.0",
+    "wanted": {
+      "dependentId": ".",
+      "name": "budo",
+      "rawSpec": "^11.7.0"
+    }
   },
   "15 debug pnpm:progress": {
-    "packageId": "registry.npmjs.org/date-fns/2.28.0",
-    "requester": "/home/ninabreznik/Documents/code/play/datdot/ui/datdot-ui-range-slider",
-    "status": "found_in_store"
+    "packageId": "registry.npmjs.org/budo/11.7.0",
+    "requester": "/home/ninabreznik/Documents/code/play/datdot/ui/range-slider",
+    "status": "resolved"
   },
   "16 debug pnpm:progress": {
-    "packageId": "registry.npmjs.org/bel/6.0.0",
-    "requester": "/home/ninabreznik/Documents/code/play/datdot/ui/datdot-ui-range-slider",
+    "packageId": "registry.npmjs.org/budo/11.7.0",
+    "requester": "/home/ninabreznik/Documents/code/play/datdot/ui/range-slider",
     "status": "found_in_store"
   },
-  "17 debug pnpm:_dependency_resolved": {
-    "resolution": "github.com/datdotorg/message-maker/d841e407a1520ed6f1a579a1892f13f5e3c13c92",
-    "wanted": {
-      "dependentId": ".",
-      "name": "message-maker",
-      "rawSpec": "github:datdotorg/message-maker"
-    }
+  "17 debug pnpm:update-check": {
+    "currentVersion": "6.31.0",
+    "latestVersion": "7.0.1"
   },
-  "18 debug pnpm:progress": {
-    "packageId": "github.com/datdotorg/message-maker/d841e407a1520ed6f1a579a1892f13f5e3c13c92",
-    "requester": "/home/ninabreznik/Documents/code/play/datdot/ui/datdot-ui-range-slider",
-    "status": "found_in_store"
-  },
-  "19 debug pnpm:progress": {
-    "packageId": "github.com/datdotorg/message-maker/d841e407a1520ed6f1a579a1892f13f5e3c13c92",
-    "requester": "/home/ninabreznik/Documents/code/play/datdot/ui/datdot-ui-range-slider",
-    "status": "resolved"
-  },
-  "20 debug pnpm:_dependency_resolved": {
-    "resolution": "github.com/datdotorg/ui-domlog/4466616f10efac58347f8f2e978b4e223f6c62fc",
-    "wanted": {
-      "dependentId": ".",
-      "name": "ui-domlog",
-      "rawSpec": "github:datdotorg/ui-domlog"
-    }
-  },
-  "21 debug pnpm:progress": {
-    "packageId": "github.com/datdotorg/ui-domlog/4466616f10efac58347f8f2e978b4e223f6c62fc",
-    "requester": "/home/ninabreznik/Documents/code/play/datdot/ui/datdot-ui-range-slider",
-    "status": "found_in_store"
-  },
-  "22 debug pnpm:progress": {
-    "packageId": "github.com/datdotorg/ui-domlog/4466616f10efac58347f8f2e978b4e223f6c62fc",
-    "requester": "/home/ninabreznik/Documents/code/play/datdot/ui/datdot-ui-range-slider",
-    "status": "resolved"
-  },
-  "23 debug pnpm:_dependency_resolved": {
-    "resolution": "registry.npmjs.org/async-os-utils/0.1.3",
-    "wanted": {
-      "dependentId": ".",
-      "name": "async-os-utils",
-      "rawSpec": "^0.1.3"
-    }
-  },
-  "24 debug pnpm:progress": {
-    "packageId": "registry.npmjs.org/async-os-utils/0.1.3",
-    "requester": "/home/ninabreznik/Documents/code/play/datdot/ui/datdot-ui-range-slider",
-    "status": "resolved"
-  },
-  "25 debug pnpm:_dependency_resolved": {
-    "resolution": "registry.npmjs.org/bel/6.0.0",
-    "wanted": {
-      "dependentId": "github.com/datdotorg/ui-domlog/4466616f10efac58347f8f2e978b4e223f6c62fc",
-      "name": "bel",
-      "rawSpec": "^6.0.0"
-    }
-  },
-  "26 debug pnpm:deprecation": {
-    "deprecated": "Renamed to 'nanohtml'. 'npm install nanohtml'",
-    "depth": 1,
-    "pkgId": "registry.npmjs.org/bel/6.0.0",
-    "pkgName": "bel",
-    "pkgVersion": "6.0.0",
-    "prefix": "/home/ninabreznik/Documents/code/play/datdot/ui/datdot-ui-range-slider"
-  },
-  "27 debug pnpm:_dependency_resolved": {
-    "resolution": "registry.npmjs.org/csjs-inject/1.0.1",
-    "wanted": {
-      "dependentId": "github.com/datdotorg/ui-domlog/4466616f10efac58347f8f2e978b4e223f6c62fc",
-      "name": "csjs-inject",
-      "rawSpec": "^1.0.1"
-    }
-  },
-  "28 debug pnpm:_dependency_resolved": {
-    "resolution": "registry.npmjs.org/ms/2.1.2",
-    "wanted": {
-      "dependentId": "/debug/4.3.3",
-      "name": "ms",
-      "rawSpec": "2.1.2"
-    }
-  },
-  "29 debug pnpm:progress": {
-    "packageId": "registry.npmjs.org/ms/2.1.2",
-    "requester": "/home/ninabreznik/Documents/code/play/datdot/ui/datdot-ui-range-slider",
-    "status": "resolved"
-  },
-  "30 debug pnpm:progress": {
-    "packageId": "registry.npmjs.org/async-os-utils/0.1.3",
-    "requester": "/home/ninabreznik/Documents/code/play/datdot/ui/datdot-ui-range-slider",
-    "status": "found_in_store"
-  },
-  "31 debug pnpm:progress": {
-    "packageId": "registry.npmjs.org/ms/2.1.2",
-    "requester": "/home/ninabreznik/Documents/code/play/datdot/ui/datdot-ui-range-slider",
-    "status": "found_in_store"
-  },
-  "32 debug pnpm:_dependency_resolved": {
-    "resolution": "registry.npmjs.org/hyperx/2.5.4",
-    "wanted": {
-      "dependentId": "/bel/6.0.0",
-      "name": "hyperx",
-      "rawSpec": "^2.3.0"
-    }
-  },
-  "33 debug pnpm:progress": {
-    "packageId": "registry.npmjs.org/hyperx/2.5.4",
-    "requester": "/home/ninabreznik/Documents/code/play/datdot/ui/datdot-ui-range-slider",
-    "status": "resolved"
-  },
-  "34 debug pnpm:_dependency_resolved": {
-    "resolution": "registry.npmjs.org/csjs/1.1.0",
-    "wanted": {
-      "dependentId": "/csjs-inject/1.0.1",
-      "name": "csjs",
-      "rawSpec": "^1.0.0"
-    }
-  },
-  "35 debug pnpm:progress": {
-    "packageId": "registry.npmjs.org/csjs/1.1.0",
-    "requester": "/home/ninabreznik/Documents/code/play/datdot/ui/datdot-ui-range-slider",
-    "status": "resolved"
-  },
-  "36 debug pnpm:_dependency_resolved": {
-    "resolution": "registry.npmjs.org/is-electron/2.2.1",
-    "wanted": {
-      "dependentId": "/bel/6.0.0",
-      "name": "is-electron",
-      "rawSpec": "^2.0.0"
-    }
-  },
-  "37 debug pnpm:progress": {
-    "packageId": "registry.npmjs.org/is-electron/2.2.1",
-    "requester": "/home/ninabreznik/Documents/code/play/datdot/ui/datdot-ui-range-slider",
-    "status": "resolved"
-  },
-  "38 debug pnpm:_dependency_resolved": {
-    "resolution": "registry.npmjs.org/pelo/0.1.0",
-    "wanted": {
-      "dependentId": "/bel/6.0.0",
-      "name": "pelo",
-      "rawSpec": "^0.1.0"
-    }
-  },
-  "39 debug pnpm:progress": {
-    "packageId": "registry.npmjs.org/pelo/0.1.0",
-    "requester": "/home/ninabreznik/Documents/code/play/datdot/ui/datdot-ui-range-slider",
-    "status": "resolved"
-  },
-  "40 debug pnpm:progress": {
-    "packageId": "registry.npmjs.org/csjs/1.1.0",
-    "requester": "/home/ninabreznik/Documents/code/play/datdot/ui/datdot-ui-range-slider",
-    "status": "found_in_store"
-  },
-  "41 debug pnpm:progress": {
-    "packageId": "registry.npmjs.org/hyperx/2.5.4",
-    "requester": "/home/ninabreznik/Documents/code/play/datdot/ui/datdot-ui-range-slider",
-    "status": "found_in_store"
-  },
-  "42 debug pnpm:progress": {
-    "packageId": "registry.npmjs.org/is-electron/2.2.1",
-    "requester": "/home/ninabreznik/Documents/code/play/datdot/ui/datdot-ui-range-slider",
-    "status": "found_in_store"
-  },
-  "43 debug pnpm:progress": {
-    "packageId": "registry.npmjs.org/pelo/0.1.0",
-    "requester": "/home/ninabreznik/Documents/code/play/datdot/ui/datdot-ui-range-slider",
-    "status": "found_in_store"
-  },
-  "44 debug pnpm:_dependency_resolved": {
-    "resolution": "registry.npmjs.org/hyperscript-attribute-to-property/1.0.2",
-    "wanted": {
-      "dependentId": "/hyperx/2.5.4",
-      "name": "hyperscript-attribute-to-property",
-      "rawSpec": "^1.0.0"
-    }
-  },
-  "45 debug pnpm:progress": {
-    "packageId": "registry.npmjs.org/hyperscript-attribute-to-property/1.0.2",
-    "requester": "/home/ninabreznik/Documents/code/play/datdot/ui/datdot-ui-range-slider",
-    "status": "resolved"
-  },
-  "46 debug pnpm:progress": {
-    "packageId": "registry.npmjs.org/hyperscript-attribute-to-property/1.0.2",
-    "requester": "/home/ninabreznik/Documents/code/play/datdot/ui/datdot-ui-range-slider",
-    "status": "found_in_store"
-  },
-  "47 debug pnpm:_dependency_resolved": {
-    "resolution": "github.com/datdotorg/datdot-ui-button/30c7cefc878a9425fe41485e42077e96f124b638",
-    "wanted": {
-      "dependentId": "github.com/datdotorg/ui-domlog/4466616f10efac58347f8f2e978b4e223f6c62fc",
-      "name": "datdot-ui-button",
-      "rawSpec": "github:datdotorg/datdot-ui-button"
-    }
-  },
-  "48 debug pnpm:progress": {
-    "packageId": "github.com/datdotorg/datdot-ui-button/30c7cefc878a9425fe41485e42077e96f124b638",
-    "requester": "/home/ninabreznik/Documents/code/play/datdot/ui/datdot-ui-range-slider",
-    "status": "found_in_store"
-  },
-  "49 debug pnpm:progress": {
-    "packageId": "github.com/datdotorg/datdot-ui-button/30c7cefc878a9425fe41485e42077e96f124b638",
-    "requester": "/home/ninabreznik/Documents/code/play/datdot/ui/datdot-ui-range-slider",
-    "status": "resolved"
-  },
-  "50 debug pnpm:_dependency_resolved": {
-    "resolution": "registry.npmjs.org/bel/6.0.0",
-    "wanted": {
-      "dependentId": "github.com/datdotorg/datdot-ui-button/30c7cefc878a9425fe41485e42077e96f124b638",
-      "name": "bel",
-      "rawSpec": "^6.0.0"
-    }
-  },
-  "51 debug pnpm:deprecation": {
-    "deprecated": "Renamed to 'nanohtml'. 'npm install nanohtml'",
-    "depth": 2,
-    "pkgId": "registry.npmjs.org/bel/6.0.0",
-    "pkgName": "bel",
-    "pkgVersion": "6.0.0",
-    "prefix": "/home/ninabreznik/Documents/code/play/datdot/ui/datdot-ui-range-slider"
-  },
-  "52 debug pnpm:_dependency_resolved": {
-    "resolution": "registry.npmjs.org/csjs-inject/1.0.1",
-    "wanted": {
-      "dependentId": "github.com/datdotorg/datdot-ui-button/30c7cefc878a9425fe41485e42077e96f124b638",
-      "name": "csjs-inject",
-      "rawSpec": "^1.0.1"
-    }
-  },
-  "53 debug pnpm:_dependency_resolved": {
-    "resolution": "registry.npmjs.org/insert-css/0.2.0",
-    "wanted": {
-      "dependentId": "/csjs-inject/1.0.1",
-      "name": "insert-css",
-      "rawSpec": "^0.2.0"
-    }
-  },
-  "54 debug pnpm:progress": {
-    "packageId": "registry.npmjs.org/insert-css/0.2.0",
-    "requester": "/home/ninabreznik/Documents/code/play/datdot/ui/datdot-ui-range-slider",
-    "status": "resolved"
-  },
-  "55 debug pnpm:progress": {
-    "packageId": "registry.npmjs.org/insert-css/0.2.0",
-    "requester": "/home/ninabreznik/Documents/code/play/datdot/ui/datdot-ui-range-slider",
-    "status": "found_in_store"
-  },
-  "56 error pnpm": {
-    "shortMessage": "Command failed with exit code 128: /usr/bin/git ls-remote git+ssh://git@github.com/fionataeyang/datdot-ui-icon.git HEAD",
-    "command": "/usr/bin/git ls-remote git+ssh://git@github.com/fionataeyang/datdot-ui-icon.git HEAD",
-    "escapedCommand": "\"/usr/bin/git\" ls-remote \"git+ssh://git@github.com/fionataeyang/datdot-ui-icon.git\" HEAD",
-    "exitCode": 128,
-    "stdout": "",
-    "stderr": "ERROR: Repository not found.\nfatal: Could not read from remote repository.\n\nPlease make sure you have the correct access rights\nand the repository exists.",
-    "failed": true,
-    "timedOut": false,
-    "isCanceled": false,
-    "killed": false,
-    "pkgsStack": [
-      {
-        "id": "github.com/datdotorg/ui-domlog/4466616f10efac58347f8f2e978b4e223f6c62fc",
-        "name": "ui-domlog",
-        "version": "0.0.0"
-      },
-      {
-        "id": "github.com/datdotorg/datdot-ui-button/30c7cefc878a9425fe41485e42077e96f124b638",
-        "name": "datdot-ui-button",
-        "version": "1.0.0"
-      }
-    ],
+  "18 error pnpm": {
+    "pkgsStack": [],
     "err": {
       "name": "pnpm",
-      "message": "Command failed with exit code 128: /usr/bin/git ls-remote git+ssh://git@github.com/fionataeyang/datdot-ui-icon.git HEAD\nERROR: Repository not found.\nfatal: Could not read from remote repository.\n\nPlease make sure you have the correct access rights\nand the repository exists.",
-      "stack": "pnpm: Command failed with exit code 128: /usr/bin/git ls-remote git+ssh://git@github.com/fionataeyang/datdot-ui-icon.git HEAD\nERROR: Repository not found.\nfatal: Could not read from remote repository.\n\nPlease make sure you have the correct access rights\nand the repository exists.\n    at makeError (/home/ninabreznik/.npm-global/lib/node_modules/pnpm/dist/pnpm.cjs:42472:17)\n    at handlePromise (/home/ninabreznik/.npm-global/lib/node_modules/pnpm/dist/pnpm.cjs:43043:33)\n    at processTicksAndRejections (node:internal/process/task_queues:96:5)\n    at async getRepoRefs (/home/ninabreznik/.npm-global/lib/node_modules/pnpm/dist/pnpm.cjs:84983:23)\n    at async resolveRef (/home/ninabreznik/.npm-global/lib/node_modules/pnpm/dist/pnpm.cjs:84995:20)\n    at async resolveGit (/home/ninabreznik/.npm-global/lib/node_modules/pnpm/dist/pnpm.cjs:84946:24)\n    at async Object.resolve (/home/ninabreznik/.npm-global/lib/node_modules/pnpm/dist/pnpm.cjs:86071:241)\n    at async run (/home/ninabreznik/.npm-global/lib/node_modules/pnpm/dist/pnpm.cjs:74166:23)"
+      "message": "Could not resolve v0.0.1-alpha to a commit of https://github.com/datdotorg/message-maker.git.",
+      "stack": "pnpm: Could not resolve v0.0.1-alpha to a commit of https://github.com/datdotorg/message-maker.git.\n    at resolveRefFromRefs (/home/ninabreznik/.npm-global/lib/node_modules/pnpm/dist/pnpm.cjs:85002:17)\n    at resolveRef (/home/ninabreznik/.npm-global/lib/node_modules/pnpm/dist/pnpm.cjs:84996:14)\n    at processTicksAndRejections (node:internal/process/task_queues:96:5)\n    at async resolveGit (/home/ninabreznik/.npm-global/lib/node_modules/pnpm/dist/pnpm.cjs:84946:24)\n    at async Object.resolve (/home/ninabreznik/.npm-global/lib/node_modules/pnpm/dist/pnpm.cjs:86071:241)\n    at async run (/home/ninabreznik/.npm-global/lib/node_modules/pnpm/dist/pnpm.cjs:74166:23)"
     }
   }
 }

@@ -1,45 +1,62 @@
 (function(){function r(e,n,t){function o(i,f){if(!n[i]){if(!e[i]){var c="function"==typeof require&&require;if(!f&&c)return c(i,!0);if(u)return u(i,!0);var a=new Error("Cannot find module '"+i+"'");throw a.code="MODULE_NOT_FOUND",a}var p=n[i]={exports:{}};e[i][0].call(p.exports,function(r){var n=e[i][1][r];return o(n||r)},p,p.exports,r,e,n,t)}return n[i].exports}for(var u="function"==typeof require&&require,i=0;i<t.length;i++)o(t[i]);return o}return r})()({1:[function(require,module,exports){
-(function (__filename){(function (){
 const bel = require('bel')
 const csjs = require('csjs-inject')
-const rangeSlider = require('..')
-const path = require('path')
-const filename = path.basename(__filename)
+const range_slider = require('..')
 const { getcpu, getram, getbandwidth } = require('../src/node_modules/getSystemInfo')
-const message_maker = require('message-maker')
+const protocol_maker = require('protocol-maker')
 
 var id = 0
 
-function demo() {
-// --------------------------------------------------------
-    const myaddress = `${__filename}-${id++}`
-    const inbox = {}
-    const outbox = {}
-    const recipients = {}
-    const names = {}
-    const message_id = to => (outbox[to] = 1 + (outbox[to]||0))
 
-    function make_protocol (name) {
-        return function protocol (address, notify) {
-            names[address] = recipients[name] = { name, address, notify, make: message_maker(myaddress) }
-            return { notify: listen, address: myaddress }
-        }
-    }
+
+function imaginary_parent_of_demo () {
+    const followups = {}
+    const contacts = protocol_maker('demo-parent', message => {
+        console.log('ROOT', message)
+    })
+    const wire = contacts.add('demo')
+    document.body.append(demo(wire))
+
+
+    // // set theme for all range slider components
+    // const { notify, make, address } = contacts.by_name['demo']
+    // const help_msg = make({ to: address, type: 'help' })
+    // const head = help_msg.head.toString()
+    // followups[head] = (state) => {
+    //     const { opts: { theme }, contacts: contacts } = state
+    //     debugger
+    //     // const { make, address, notify } = contacts['input-0']
+    //     // notify(make({ to: address, type: 'theme', data: { theme: custom_theme }}))
+    // }
+    // notify(help_msg)
+    
+}
+
+
+
+
+
+
+function demo (parent_wire) {
+// --------------------------------------------------------
+    const initial_contacts = { 'parent': parent_wire }
+    const contacts = protocol_maker('demo', listen, initial_contacts)
     function listen (msg) {
         console.log('New message', { msg })
         const { head, refs, type, data, meta } = msg // receive msg
-        inbox[head.join('/')] = msg                  // store msg
         const [from] = head
-        // send back ack
-        const { notify, make, address } = names[from]
-        notify(make({ to: address, type: 'ack', refs: { 'cause': head } }))
+        if (type === 'help' && followups[refs.cause.toString()]) {
+            const cb = followups[refs.cause]
+            const { state } = data
+            cb(data.state)
+        }
     }
 // --------------------------------------------------------
-    const cpu = rangeSlider({ label: 'CPU', info: getcpu(), range: { min:0, max: 100 } }, make_protocol('cpu') )
-    const ram = rangeSlider({ label: 'RAM', info: getram(), range: { min:0, max: 8 }, value: 1 }, make_protocol('ram') )
+    const cpu = range_slider({ label: 'CPU', unit: '%', info: getcpu(), range: { min:0, max: 100 } }, contacts.add('cpu') )
+    const ram = range_slider({ label: 'RAM', unit: 'GB', info: getram(), range: { min:0, max: 8 }, value: 1 }, contacts.add('ram') )
     const bandwidth = getbandwidth()
-    const download = rangeSlider( {label: 'Download', info: bandwidth.download, range: { min:0, max: 20}, value: 8 }, make_protocol('download') )
-    const upload = rangeSlider({ label: 'Upload', info: bandwidth.upload, range: { min:0, max: 5 }, value: 1 }, make_protocol('upload') )
+    const download = range_slider( {label: 'Download', unit: 'MB', info: bandwidth.download, range: { min:0, max: 20}, value: 8 }, contacts.add('download') )
+    const upload = range_slider({ label: 'Upload', unit: 'MB', info: bandwidth.upload, range: { min:0, max: 5 }, value: 1 }, contacts.add('upload') )
     
     const content = bel`
     <div class=${css.content}>
@@ -115,10 +132,8 @@ body {
     overflow-y: auto;
 }
 `
-
-document.body.append(demo())
-}).call(this)}).call(this,"/demo/demo.js")
-},{"..":31,"../src/node_modules/getSystemInfo":32,"bel":3,"csjs-inject":6,"message-maker":25,"path":29}],2:[function(require,module,exports){
+imaginary_parent_of_demo()
+},{"..":30,"../src/node_modules/getSystemInfo":31,"bel":3,"csjs-inject":6,"protocol-maker":26}],2:[function(require,module,exports){
 var trailingNewlineRegex = /\n[\s]+$/
 var leadingNewlineRegex = /^\n[\s]+/
 var trailingSpaceRegex = /[\s]+$/
@@ -352,7 +367,7 @@ module.exports = hyperx(belCreateElement, {comments: true})
 module.exports.default = module.exports
 module.exports.createElement = belCreateElement
 
-},{"./appendChild":2,"hyperx":27}],4:[function(require,module,exports){
+},{"./appendChild":2,"hyperx":28}],4:[function(require,module,exports){
 (function (global){(function (){
 'use strict';
 
@@ -371,7 +386,7 @@ function csjsInserter() {
 module.exports = csjsInserter;
 
 }).call(this)}).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"csjs":9,"insert-css":28}],5:[function(require,module,exports){
+},{"csjs":9,"insert-css":29}],5:[function(require,module,exports){
 'use strict';
 
 module.exports = require('csjs/get-css');
@@ -856,8 +871,6 @@ var id = 0
 
 module.exports = i_input
 
-var current_theme
-var current_style
 const default_theme = {
     props: {
         '--b': '0, 0%',
@@ -903,17 +916,26 @@ const default_theme = {
     classList: 'input-field'
 }
 
-i_input.docs = () => { return { opts: { value:0, min: 0, max: 100, step: 1, placeholder:'', theme: default_theme } } }
+i_input.help = () => { return { opts: { value:0, min: 0, max: 100, step: 1, placeholder:'', theme: default_theme } } }
 
 function i_input (opts, protocol) {
     const { value = 0, min = 0, max = 100, step = 1, placeholder = '', theme = {} } = opts
-    var current_value = value
+    const state = {
+        opts: {
+            value,
+            min,
+            max,
+            step,
+            placeholder,
+            theme,
+        },
+        style: ``,
+    }
     let [int, dec] = split_val(step)
     const el = document.createElement('i-input')
     const shadow = el.attachShadow({mode: 'closed'})
     const input = document.createElement('input')
-    current_theme = theme
-    update_style(current_theme, shadow)
+    update_style(state.opts.theme, shadow)
 // ------------------------------------------------
     const myaddress = `i-input-${id++}` // unique
     const inbox = {}
@@ -937,16 +959,16 @@ function i_input (opts, protocol) {
         // todo: what happens when we receive the message
         const name = names[from].name
         if (name === 'parent' && type === 'onchange') {
-            current_value = data.value
-            input.value = current_value
+            state.opts.value = data.value
+            input.value = state.opts.value
         }
         if (type === 'help') {
             const { notify: name_notify, make: name_make, address: name_address } = recipients[name]
-            name_notify(name_make({ to: name_address, type: 'help', data: { theme: current_theme }, refs: { cause: head }}))
+            name_notify(name_make({ to: name_address, type: 'help', data: { state }, refs: { cause: head }}))
         }
         else if (type === 'theme_update' && data.theme) {
-            current_theme = JSON.parse(data.theme.replace(/\n/g, ''))
-            update_style(current_theme, shadow)
+            state.opts.theme = JSON.parse(data.theme.replace(/\n/g, ''))
+            update_style(state.opts.theme, shadow)
         }
     }
 // ------------------------------------------------
@@ -984,8 +1006,8 @@ function i_input (opts, protocol) {
         }
         let new_val = new_val_d === 0 ? `${new_val_i}` : `${new_val_i}.${new_val_d}`
         input.value = new_val > max ? max.toString() : new_val
-        current_value = input.value
-        notify( make({to: address, type: 'onchange', data: { value: current_value }}))
+        state.opts.value = input.value
+        notify( make({to: address, type: 'onchange', data: { value: state.opts.value }}))
     }
     function decrease (e, input, val) {
         e.preventDefault()
@@ -1003,15 +1025,15 @@ function i_input (opts, protocol) {
         }
         let new_val = new_val_d === 0 ? `${new_val_i}` : `${new_val_i}.${new_val_d}`
         input.value = new_val < min ? min.toString() : new_val
-        current_value = input.value
-        notify(make({to: address, type: 'onchange', data: { value: current_value }}))
+        state.opts.value = input.value
+        notify(make({to: address, type: 'onchange', data: { value: state.opts.value }}))
     }
     // event handlers
     function handle_click (e, input) { e.target.select() }
     function handle_focus (e, input) {}
     function handle_blur (e, input) {
         if (input.value === '') return
-        notify(make({to: address, type: 'onblur', data: { value: current_value }}))
+        notify(make({to: address, type: 'onblur', data: { value: state.opts.value }}))
     }
     function handle_wheel (e, input) {
         const target = e.target
@@ -1033,13 +1055,13 @@ function i_input (opts, protocol) {
         if (val < min || val > max) e.preventDefault()
         if (val > max) input.value = max
         if (val < min) input.value = min
-        current_value = input.value
-        notify(make({to: address, type: 'onchange', data: { value: current_value }}))
+        state.opts.value = input.value
+        notify(make({to: address, type: 'onchange', data: { value: state.opts.value }}))
     }
-    function update_style (current_theme, shadow) {
-        const { style: custom_style = '', props = {}, grid = {}, classList = '' } = current_theme
-        if (current_theme.classList?.length) input.setAttribute('class', current_theme.classList)
-        current_style =  `
+    function update_style (theme, shadow) {
+        const { style: custom_style = '', props = {}, grid = {}, classList = '' } = theme
+        if (theme.classList?.length) input.setAttribute('class', theme.classList)
+        state.style =  `
         :host(i-input) {
           ${Object.keys(default_theme.props).map(key => `${key}: ${props[key] || default_theme.props[key]};`).join('\n')}
           width: var(--width);
@@ -1072,7 +1094,7 @@ function i_input (opts, protocol) {
         }
         ${custom_style}
         `
-        style_sheet(shadow, current_style)
+        style_sheet(shadow, state.style)
     }
 
     // helpers
@@ -1115,6 +1137,139 @@ module.exports = function message_maker (from) {
   }
 }
 },{}],26:[function(require,module,exports){
+// const path = require('path')
+// const filename = path.basename(__filename)
+const message_maker = require('message-maker')
+// const message_id = to => (outbox[to] = 1 + (outbox[to]||0))
+
+module.exports = protocol_maker
+
+const routes = {}
+var id = 0
+
+function protocol_maker (type, listen, initial_contacts = {}) {
+  if (!type || typeof type !== 'string') throw new Error('invalid type')
+  const myaddress = id++
+
+  const inbox = {}
+  const outbox = {}
+
+  const by_name = {}
+  const by_address = {}
+  const contacts = { add, by_name, by_address, cut, on }
+  
+  const keys = Object.keys(initial_contacts)
+  for (var i = 0, len = keys.length; i < len; i++) {
+    const name = keys[i]
+    const wire = initial_contacts[name]
+    // @INFO: perspective of sub instance:
+    const { notify, address } = wire(myaddress, wrap_listen(listen))    
+    const contact = {
+      name,
+      address,
+      // path: `${myaddress}/${name}`,
+      notify: wrap_notify(notify),
+      make: message_maker(myaddress)
+    }
+    by_name[name] = by_address[address] = contact // new Promise(resolve => resolve(contact))
+  }
+  return contacts
+  function on (listener) {
+    // @NOTE: to listen to any "default protocol events" supported by any protocol, e.g. help
+    // maybe also: 'connect', or 'disconnect'
+    throw new Error ('`on` is not yet implemented')
+    return function off () {}
+  }
+  function cut (wire) { throw new Error ('`cut` is not yet implemented')}
+  function add (name) {
+    // @INFO: perspective of instance:
+    if (!name || typeof name !== 'string') throw new Error('invalid name')
+    if (by_name[name]) throw new Error('name already exists')
+    const wait = {}
+    by_name[name] = { name, make: message_maker(myaddress) } // new Promise((resolve, reject) => { wait.resolve = resolve; wait.reject = reject })
+    return function wire (address, notify) {
+      const contact = {
+        // @TODO: add queryable "routes" and allow lookup `by_route[route]`       
+        name, // a nickname dev gives to a component
+        address, // an address app makes for each component
+        // TODO: address will become "name" (like type) compared to nickname
+        // address: something new, based on e.g. filepath or browserified bundle.js:22:42 etc.. to give actual globally unique identifier
+        notify: wrap_notify(notify),
+        make: message_maker(myaddress)
+      }
+      // wait.resolve(contact)
+      by_name[name].address = address
+      by_name[name].notify = wrap_notify(notify)
+      by_address[address] = contact // new Promise(resolve => resolve(contact))
+      return { notify: wrap_listen(listen), address: myaddress }
+    }
+  }
+  function wrap_notify (notify) {
+    return message => {
+      outbox[message.head.join('/')] = message  // store message
+      return notify(message)
+    }
+  }
+  function wrap_listen (listen) {
+    return message => {
+      inbox[message.head.join('/')] = message  // store message
+      return listen(message)
+    }
+  }
+}
+/*
+const name_routes = [
+  "root/",
+  "root/el:demo/",
+  "root/el:demo/cpu:range-slider/",
+  "root/el:demo/cpu:range-slider/%:input-number/",
+  "root/el:demo/ram:range-slider/",
+  "root/el:demo/ram:range-slider/GB:input-number/",
+  "root/el:demo/upload:range-slider/",
+  "root/el:demo/upload:range-slider/MB:input-number/",
+  "root/el:demo/download:range-slider/",
+  "root/el:demo/download:range-slider/MB:input-number/",  
+]
+// --------------------------------------------------
+const name_routes = {
+    root: {
+        "el:demo": {
+            "cpu:range-slider": {
+                "%:input-number": {}
+            },
+            "ram:range-slider": {
+                "GB:input-number": {}
+            },
+            "download:range-slider": {
+                "MB:input-number": {}
+            },
+            "upload:range-slider": {
+                "MB:input-number": {}
+            },
+        },
+    },
+}
+// --------------------------------------------------
+const name_routes = {
+    root: {
+        "el": {
+            "cpu": {
+                "%": {}
+            },
+            "ram": {
+                "GB": {}
+            },
+            "download": {
+                "MB": {}
+            },
+            "upload": {
+                "MB": {}
+            },
+        },
+    },
+}
+*/
+},{"message-maker":25}],27:[function(require,module,exports){
 module.exports = attributeToProperty
 
 var transform = {
@@ -1135,7 +1290,7 @@ function attributeToProperty (h) {
   }
 }
 
-},{}],27:[function(require,module,exports){
+},{}],28:[function(require,module,exports){
 var attrToProp = require('hyperscript-attribute-to-property')
 
 var VAR = 0, TEXT = 1, OPEN = 2, CLOSE = 3, ATTR = 4
@@ -1432,7 +1587,7 @@ var closeRE = RegExp('^(' + [
 ].join('|') + ')(?:[\.#][a-zA-Z0-9\u007F-\uFFFF_:-]+)*$')
 function selfClosing (tag) { return closeRE.test(tag) }
 
-},{"hyperscript-attribute-to-property":26}],28:[function(require,module,exports){
+},{"hyperscript-attribute-to-property":27}],29:[function(require,module,exports){
 var inserted = {};
 
 module.exports = function (css, options) {
@@ -1456,732 +1611,10 @@ module.exports = function (css, options) {
     }
 };
 
-},{}],29:[function(require,module,exports){
-(function (process){(function (){
-// 'path' module extracted from Node.js v8.11.1 (only the posix part)
-// transplited with Babel
-
-// Copyright Joyent, Inc. and other Node contributors.
-//
-// Permission is hereby granted, free of charge, to any person obtaining a
-// copy of this software and associated documentation files (the
-// "Software"), to deal in the Software without restriction, including
-// without limitation the rights to use, copy, modify, merge, publish,
-// distribute, sublicense, and/or sell copies of the Software, and to permit
-// persons to whom the Software is furnished to do so, subject to the
-// following conditions:
-//
-// The above copyright notice and this permission notice shall be included
-// in all copies or substantial portions of the Software.
-//
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
-// OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
-// MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN
-// NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
-// DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
-// OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE
-// USE OR OTHER DEALINGS IN THE SOFTWARE.
-
-'use strict';
-
-function assertPath(path) {
-  if (typeof path !== 'string') {
-    throw new TypeError('Path must be a string. Received ' + JSON.stringify(path));
-  }
-}
-
-// Resolves . and .. elements in a path with directory names
-function normalizeStringPosix(path, allowAboveRoot) {
-  var res = '';
-  var lastSegmentLength = 0;
-  var lastSlash = -1;
-  var dots = 0;
-  var code;
-  for (var i = 0; i <= path.length; ++i) {
-    if (i < path.length)
-      code = path.charCodeAt(i);
-    else if (code === 47 /*/*/)
-      break;
-    else
-      code = 47 /*/*/;
-    if (code === 47 /*/*/) {
-      if (lastSlash === i - 1 || dots === 1) {
-        // NOOP
-      } else if (lastSlash !== i - 1 && dots === 2) {
-        if (res.length < 2 || lastSegmentLength !== 2 || res.charCodeAt(res.length - 1) !== 46 /*.*/ || res.charCodeAt(res.length - 2) !== 46 /*.*/) {
-          if (res.length > 2) {
-            var lastSlashIndex = res.lastIndexOf('/');
-            if (lastSlashIndex !== res.length - 1) {
-              if (lastSlashIndex === -1) {
-                res = '';
-                lastSegmentLength = 0;
-              } else {
-                res = res.slice(0, lastSlashIndex);
-                lastSegmentLength = res.length - 1 - res.lastIndexOf('/');
-              }
-              lastSlash = i;
-              dots = 0;
-              continue;
-            }
-          } else if (res.length === 2 || res.length === 1) {
-            res = '';
-            lastSegmentLength = 0;
-            lastSlash = i;
-            dots = 0;
-            continue;
-          }
-        }
-        if (allowAboveRoot) {
-          if (res.length > 0)
-            res += '/..';
-          else
-            res = '..';
-          lastSegmentLength = 2;
-        }
-      } else {
-        if (res.length > 0)
-          res += '/' + path.slice(lastSlash + 1, i);
-        else
-          res = path.slice(lastSlash + 1, i);
-        lastSegmentLength = i - lastSlash - 1;
-      }
-      lastSlash = i;
-      dots = 0;
-    } else if (code === 46 /*.*/ && dots !== -1) {
-      ++dots;
-    } else {
-      dots = -1;
-    }
-  }
-  return res;
-}
-
-function _format(sep, pathObject) {
-  var dir = pathObject.dir || pathObject.root;
-  var base = pathObject.base || (pathObject.name || '') + (pathObject.ext || '');
-  if (!dir) {
-    return base;
-  }
-  if (dir === pathObject.root) {
-    return dir + base;
-  }
-  return dir + sep + base;
-}
-
-var posix = {
-  // path.resolve([from ...], to)
-  resolve: function resolve() {
-    var resolvedPath = '';
-    var resolvedAbsolute = false;
-    var cwd;
-
-    for (var i = arguments.length - 1; i >= -1 && !resolvedAbsolute; i--) {
-      var path;
-      if (i >= 0)
-        path = arguments[i];
-      else {
-        if (cwd === undefined)
-          cwd = process.cwd();
-        path = cwd;
-      }
-
-      assertPath(path);
-
-      // Skip empty entries
-      if (path.length === 0) {
-        continue;
-      }
-
-      resolvedPath = path + '/' + resolvedPath;
-      resolvedAbsolute = path.charCodeAt(0) === 47 /*/*/;
-    }
-
-    // At this point the path should be resolved to a full absolute path, but
-    // handle relative paths to be safe (might happen when process.cwd() fails)
-
-    // Normalize the path
-    resolvedPath = normalizeStringPosix(resolvedPath, !resolvedAbsolute);
-
-    if (resolvedAbsolute) {
-      if (resolvedPath.length > 0)
-        return '/' + resolvedPath;
-      else
-        return '/';
-    } else if (resolvedPath.length > 0) {
-      return resolvedPath;
-    } else {
-      return '.';
-    }
-  },
-
-  normalize: function normalize(path) {
-    assertPath(path);
-
-    if (path.length === 0) return '.';
-
-    var isAbsolute = path.charCodeAt(0) === 47 /*/*/;
-    var trailingSeparator = path.charCodeAt(path.length - 1) === 47 /*/*/;
-
-    // Normalize the path
-    path = normalizeStringPosix(path, !isAbsolute);
-
-    if (path.length === 0 && !isAbsolute) path = '.';
-    if (path.length > 0 && trailingSeparator) path += '/';
-
-    if (isAbsolute) return '/' + path;
-    return path;
-  },
-
-  isAbsolute: function isAbsolute(path) {
-    assertPath(path);
-    return path.length > 0 && path.charCodeAt(0) === 47 /*/*/;
-  },
-
-  join: function join() {
-    if (arguments.length === 0)
-      return '.';
-    var joined;
-    for (var i = 0; i < arguments.length; ++i) {
-      var arg = arguments[i];
-      assertPath(arg);
-      if (arg.length > 0) {
-        if (joined === undefined)
-          joined = arg;
-        else
-          joined += '/' + arg;
-      }
-    }
-    if (joined === undefined)
-      return '.';
-    return posix.normalize(joined);
-  },
-
-  relative: function relative(from, to) {
-    assertPath(from);
-    assertPath(to);
-
-    if (from === to) return '';
-
-    from = posix.resolve(from);
-    to = posix.resolve(to);
-
-    if (from === to) return '';
-
-    // Trim any leading backslashes
-    var fromStart = 1;
-    for (; fromStart < from.length; ++fromStart) {
-      if (from.charCodeAt(fromStart) !== 47 /*/*/)
-        break;
-    }
-    var fromEnd = from.length;
-    var fromLen = fromEnd - fromStart;
-
-    // Trim any leading backslashes
-    var toStart = 1;
-    for (; toStart < to.length; ++toStart) {
-      if (to.charCodeAt(toStart) !== 47 /*/*/)
-        break;
-    }
-    var toEnd = to.length;
-    var toLen = toEnd - toStart;
-
-    // Compare paths to find the longest common path from root
-    var length = fromLen < toLen ? fromLen : toLen;
-    var lastCommonSep = -1;
-    var i = 0;
-    for (; i <= length; ++i) {
-      if (i === length) {
-        if (toLen > length) {
-          if (to.charCodeAt(toStart + i) === 47 /*/*/) {
-            // We get here if `from` is the exact base path for `to`.
-            // For example: from='/foo/bar'; to='/foo/bar/baz'
-            return to.slice(toStart + i + 1);
-          } else if (i === 0) {
-            // We get here if `from` is the root
-            // For example: from='/'; to='/foo'
-            return to.slice(toStart + i);
-          }
-        } else if (fromLen > length) {
-          if (from.charCodeAt(fromStart + i) === 47 /*/*/) {
-            // We get here if `to` is the exact base path for `from`.
-            // For example: from='/foo/bar/baz'; to='/foo/bar'
-            lastCommonSep = i;
-          } else if (i === 0) {
-            // We get here if `to` is the root.
-            // For example: from='/foo'; to='/'
-            lastCommonSep = 0;
-          }
-        }
-        break;
-      }
-      var fromCode = from.charCodeAt(fromStart + i);
-      var toCode = to.charCodeAt(toStart + i);
-      if (fromCode !== toCode)
-        break;
-      else if (fromCode === 47 /*/*/)
-        lastCommonSep = i;
-    }
-
-    var out = '';
-    // Generate the relative path based on the path difference between `to`
-    // and `from`
-    for (i = fromStart + lastCommonSep + 1; i <= fromEnd; ++i) {
-      if (i === fromEnd || from.charCodeAt(i) === 47 /*/*/) {
-        if (out.length === 0)
-          out += '..';
-        else
-          out += '/..';
-      }
-    }
-
-    // Lastly, append the rest of the destination (`to`) path that comes after
-    // the common path parts
-    if (out.length > 0)
-      return out + to.slice(toStart + lastCommonSep);
-    else {
-      toStart += lastCommonSep;
-      if (to.charCodeAt(toStart) === 47 /*/*/)
-        ++toStart;
-      return to.slice(toStart);
-    }
-  },
-
-  _makeLong: function _makeLong(path) {
-    return path;
-  },
-
-  dirname: function dirname(path) {
-    assertPath(path);
-    if (path.length === 0) return '.';
-    var code = path.charCodeAt(0);
-    var hasRoot = code === 47 /*/*/;
-    var end = -1;
-    var matchedSlash = true;
-    for (var i = path.length - 1; i >= 1; --i) {
-      code = path.charCodeAt(i);
-      if (code === 47 /*/*/) {
-          if (!matchedSlash) {
-            end = i;
-            break;
-          }
-        } else {
-        // We saw the first non-path separator
-        matchedSlash = false;
-      }
-    }
-
-    if (end === -1) return hasRoot ? '/' : '.';
-    if (hasRoot && end === 1) return '//';
-    return path.slice(0, end);
-  },
-
-  basename: function basename(path, ext) {
-    if (ext !== undefined && typeof ext !== 'string') throw new TypeError('"ext" argument must be a string');
-    assertPath(path);
-
-    var start = 0;
-    var end = -1;
-    var matchedSlash = true;
-    var i;
-
-    if (ext !== undefined && ext.length > 0 && ext.length <= path.length) {
-      if (ext.length === path.length && ext === path) return '';
-      var extIdx = ext.length - 1;
-      var firstNonSlashEnd = -1;
-      for (i = path.length - 1; i >= 0; --i) {
-        var code = path.charCodeAt(i);
-        if (code === 47 /*/*/) {
-            // If we reached a path separator that was not part of a set of path
-            // separators at the end of the string, stop now
-            if (!matchedSlash) {
-              start = i + 1;
-              break;
-            }
-          } else {
-          if (firstNonSlashEnd === -1) {
-            // We saw the first non-path separator, remember this index in case
-            // we need it if the extension ends up not matching
-            matchedSlash = false;
-            firstNonSlashEnd = i + 1;
-          }
-          if (extIdx >= 0) {
-            // Try to match the explicit extension
-            if (code === ext.charCodeAt(extIdx)) {
-              if (--extIdx === -1) {
-                // We matched the extension, so mark this as the end of our path
-                // component
-                end = i;
-              }
-            } else {
-              // Extension does not match, so our result is the entire path
-              // component
-              extIdx = -1;
-              end = firstNonSlashEnd;
-            }
-          }
-        }
-      }
-
-      if (start === end) end = firstNonSlashEnd;else if (end === -1) end = path.length;
-      return path.slice(start, end);
-    } else {
-      for (i = path.length - 1; i >= 0; --i) {
-        if (path.charCodeAt(i) === 47 /*/*/) {
-            // If we reached a path separator that was not part of a set of path
-            // separators at the end of the string, stop now
-            if (!matchedSlash) {
-              start = i + 1;
-              break;
-            }
-          } else if (end === -1) {
-          // We saw the first non-path separator, mark this as the end of our
-          // path component
-          matchedSlash = false;
-          end = i + 1;
-        }
-      }
-
-      if (end === -1) return '';
-      return path.slice(start, end);
-    }
-  },
-
-  extname: function extname(path) {
-    assertPath(path);
-    var startDot = -1;
-    var startPart = 0;
-    var end = -1;
-    var matchedSlash = true;
-    // Track the state of characters (if any) we see before our first dot and
-    // after any path separator we find
-    var preDotState = 0;
-    for (var i = path.length - 1; i >= 0; --i) {
-      var code = path.charCodeAt(i);
-      if (code === 47 /*/*/) {
-          // If we reached a path separator that was not part of a set of path
-          // separators at the end of the string, stop now
-          if (!matchedSlash) {
-            startPart = i + 1;
-            break;
-          }
-          continue;
-        }
-      if (end === -1) {
-        // We saw the first non-path separator, mark this as the end of our
-        // extension
-        matchedSlash = false;
-        end = i + 1;
-      }
-      if (code === 46 /*.*/) {
-          // If this is our first dot, mark it as the start of our extension
-          if (startDot === -1)
-            startDot = i;
-          else if (preDotState !== 1)
-            preDotState = 1;
-      } else if (startDot !== -1) {
-        // We saw a non-dot and non-path separator before our dot, so we should
-        // have a good chance at having a non-empty extension
-        preDotState = -1;
-      }
-    }
-
-    if (startDot === -1 || end === -1 ||
-        // We saw a non-dot character immediately before the dot
-        preDotState === 0 ||
-        // The (right-most) trimmed path component is exactly '..'
-        preDotState === 1 && startDot === end - 1 && startDot === startPart + 1) {
-      return '';
-    }
-    return path.slice(startDot, end);
-  },
-
-  format: function format(pathObject) {
-    if (pathObject === null || typeof pathObject !== 'object') {
-      throw new TypeError('The "pathObject" argument must be of type Object. Received type ' + typeof pathObject);
-    }
-    return _format('/', pathObject);
-  },
-
-  parse: function parse(path) {
-    assertPath(path);
-
-    var ret = { root: '', dir: '', base: '', ext: '', name: '' };
-    if (path.length === 0) return ret;
-    var code = path.charCodeAt(0);
-    var isAbsolute = code === 47 /*/*/;
-    var start;
-    if (isAbsolute) {
-      ret.root = '/';
-      start = 1;
-    } else {
-      start = 0;
-    }
-    var startDot = -1;
-    var startPart = 0;
-    var end = -1;
-    var matchedSlash = true;
-    var i = path.length - 1;
-
-    // Track the state of characters (if any) we see before our first dot and
-    // after any path separator we find
-    var preDotState = 0;
-
-    // Get non-dir info
-    for (; i >= start; --i) {
-      code = path.charCodeAt(i);
-      if (code === 47 /*/*/) {
-          // If we reached a path separator that was not part of a set of path
-          // separators at the end of the string, stop now
-          if (!matchedSlash) {
-            startPart = i + 1;
-            break;
-          }
-          continue;
-        }
-      if (end === -1) {
-        // We saw the first non-path separator, mark this as the end of our
-        // extension
-        matchedSlash = false;
-        end = i + 1;
-      }
-      if (code === 46 /*.*/) {
-          // If this is our first dot, mark it as the start of our extension
-          if (startDot === -1) startDot = i;else if (preDotState !== 1) preDotState = 1;
-        } else if (startDot !== -1) {
-        // We saw a non-dot and non-path separator before our dot, so we should
-        // have a good chance at having a non-empty extension
-        preDotState = -1;
-      }
-    }
-
-    if (startDot === -1 || end === -1 ||
-    // We saw a non-dot character immediately before the dot
-    preDotState === 0 ||
-    // The (right-most) trimmed path component is exactly '..'
-    preDotState === 1 && startDot === end - 1 && startDot === startPart + 1) {
-      if (end !== -1) {
-        if (startPart === 0 && isAbsolute) ret.base = ret.name = path.slice(1, end);else ret.base = ret.name = path.slice(startPart, end);
-      }
-    } else {
-      if (startPart === 0 && isAbsolute) {
-        ret.name = path.slice(1, startDot);
-        ret.base = path.slice(1, end);
-      } else {
-        ret.name = path.slice(startPart, startDot);
-        ret.base = path.slice(startPart, end);
-      }
-      ret.ext = path.slice(startDot, end);
-    }
-
-    if (startPart > 0) ret.dir = path.slice(0, startPart - 1);else if (isAbsolute) ret.dir = '/';
-
-    return ret;
-  },
-
-  sep: '/',
-  delimiter: ':',
-  win32: null,
-  posix: null
-};
-
-posix.posix = posix;
-
-module.exports = posix;
-
-}).call(this)}).call(this,require('_process'))
-},{"_process":30}],30:[function(require,module,exports){
-// shim for using process in browser
-var process = module.exports = {};
-
-// cached from whatever global is present so that test runners that stub it
-// don't break things.  But we need to wrap it in a try catch in case it is
-// wrapped in strict mode code which doesn't define any globals.  It's inside a
-// function because try/catches deoptimize in certain engines.
-
-var cachedSetTimeout;
-var cachedClearTimeout;
-
-function defaultSetTimout() {
-    throw new Error('setTimeout has not been defined');
-}
-function defaultClearTimeout () {
-    throw new Error('clearTimeout has not been defined');
-}
-(function () {
-    try {
-        if (typeof setTimeout === 'function') {
-            cachedSetTimeout = setTimeout;
-        } else {
-            cachedSetTimeout = defaultSetTimout;
-        }
-    } catch (e) {
-        cachedSetTimeout = defaultSetTimout;
-    }
-    try {
-        if (typeof clearTimeout === 'function') {
-            cachedClearTimeout = clearTimeout;
-        } else {
-            cachedClearTimeout = defaultClearTimeout;
-        }
-    } catch (e) {
-        cachedClearTimeout = defaultClearTimeout;
-    }
-} ())
-function runTimeout(fun) {
-    if (cachedSetTimeout === setTimeout) {
-        //normal enviroments in sane situations
-        return setTimeout(fun, 0);
-    }
-    // if setTimeout wasn't available but was latter defined
-    if ((cachedSetTimeout === defaultSetTimout || !cachedSetTimeout) && setTimeout) {
-        cachedSetTimeout = setTimeout;
-        return setTimeout(fun, 0);
-    }
-    try {
-        // when when somebody has screwed with setTimeout but no I.E. maddness
-        return cachedSetTimeout(fun, 0);
-    } catch(e){
-        try {
-            // When we are in I.E. but the script has been evaled so I.E. doesn't trust the global object when called normally
-            return cachedSetTimeout.call(null, fun, 0);
-        } catch(e){
-            // same as above but when it's a version of I.E. that must have the global object for 'this', hopfully our context correct otherwise it will throw a global error
-            return cachedSetTimeout.call(this, fun, 0);
-        }
-    }
-
-
-}
-function runClearTimeout(marker) {
-    if (cachedClearTimeout === clearTimeout) {
-        //normal enviroments in sane situations
-        return clearTimeout(marker);
-    }
-    // if clearTimeout wasn't available but was latter defined
-    if ((cachedClearTimeout === defaultClearTimeout || !cachedClearTimeout) && clearTimeout) {
-        cachedClearTimeout = clearTimeout;
-        return clearTimeout(marker);
-    }
-    try {
-        // when when somebody has screwed with setTimeout but no I.E. maddness
-        return cachedClearTimeout(marker);
-    } catch (e){
-        try {
-            // When we are in I.E. but the script has been evaled so I.E. doesn't  trust the global object when called normally
-            return cachedClearTimeout.call(null, marker);
-        } catch (e){
-            // same as above but when it's a version of I.E. that must have the global object for 'this', hopfully our context correct otherwise it will throw a global error.
-            // Some versions of I.E. have different rules for clearTimeout vs setTimeout
-            return cachedClearTimeout.call(this, marker);
-        }
-    }
-
-
-
-}
-var queue = [];
-var draining = false;
-var currentQueue;
-var queueIndex = -1;
-
-function cleanUpNextTick() {
-    if (!draining || !currentQueue) {
-        return;
-    }
-    draining = false;
-    if (currentQueue.length) {
-        queue = currentQueue.concat(queue);
-    } else {
-        queueIndex = -1;
-    }
-    if (queue.length) {
-        drainQueue();
-    }
-}
-
-function drainQueue() {
-    if (draining) {
-        return;
-    }
-    var timeout = runTimeout(cleanUpNextTick);
-    draining = true;
-
-    var len = queue.length;
-    while(len) {
-        currentQueue = queue;
-        queue = [];
-        while (++queueIndex < len) {
-            if (currentQueue) {
-                currentQueue[queueIndex].run();
-            }
-        }
-        queueIndex = -1;
-        len = queue.length;
-    }
-    currentQueue = null;
-    draining = false;
-    runClearTimeout(timeout);
-}
-
-process.nextTick = function (fun) {
-    var args = new Array(arguments.length - 1);
-    if (arguments.length > 1) {
-        for (var i = 1; i < arguments.length; i++) {
-            args[i - 1] = arguments[i];
-        }
-    }
-    queue.push(new Item(fun, args));
-    if (queue.length === 1 && !draining) {
-        runTimeout(drainQueue);
-    }
-};
-
-// v8 likes predictible objects
-function Item(fun, array) {
-    this.fun = fun;
-    this.array = array;
-}
-Item.prototype.run = function () {
-    this.fun.apply(null, this.array);
-};
-process.title = 'browser';
-process.browser = true;
-process.env = {};
-process.argv = [];
-process.version = ''; // empty string to avoid regexp issues
-process.versions = {};
-
-function noop() {}
-
-process.on = noop;
-process.addListener = noop;
-process.once = noop;
-process.off = noop;
-process.removeListener = noop;
-process.removeAllListeners = noop;
-process.emit = noop;
-process.prependListener = noop;
-process.prependOnceListener = noop;
-
-process.listeners = function (name) { return [] }
-
-process.binding = function (name) {
-    throw new Error('process.binding is not supported');
-};
-
-process.cwd = function () { return '/' };
-process.chdir = function (dir) {
-    throw new Error('process.chdir is not supported');
-};
-process.umask = function() { return 0; };
-
-},{}],31:[function(require,module,exports){
-(function (__filename){(function (){
+},{}],30:[function(require,module,exports){
 const bel = require('bel')
 const style_sheet = require('support-style-sheet')
-const path = require('path')
-const filename = path.basename(__filename)
-const message_maker = require('message-maker')
+const protocol_maker = require('protocol-maker')
 const input_number = require('datdot-ui-input-number')
 
 var id = 0
@@ -2195,55 +1628,52 @@ const default_theme = {
     style: ``,
     theme: {}
 }
-range_slider.help = () => { return { opts: { info: '32GB', range: { min: 0, max: 32}, label: 'GB', value: 0, theme: default_theme } } }
 
-function range_slider({ info, range: { min, max }, label, value = 0, theme = {} }, parent_protocol) {
+// help for module
+range_slider.help = () => { 
+    return { 
+        opts: { info: '32GB', range: { min: 0, max: 32}, label: 'RAM', unit: 'GB', value: 0, theme: default_theme },
+        dependencies: {
+            'input_number':  { opts: input_number.help().opts }
+        }
+
+    } 
+}
+
+function range_slider(opts, parent_wire) {
+    const { info = '', range: { min = 0, max = 100 }, label = '', unit = '', value = 0, theme = {} } = opts
     const state = {
         opts: {
             info,
             range: { min, max },
             label,
+            unit,
             value,
             theme
         },
-        style: ``
+        style: ``,
+        recipients: {}
     }
 // ---------------------------------------------
-    const myaddress = `${__filename}-${id++}`
-    const inbox = {}
-    const outbox = {}
-    const recipients = {}
-    const names = {}
-    const message_id = to => (outbox[to] = 1 + (outbox[to]||0))
+    const initial_contacts = { 'parent': parent_wire }
 
-    const {notify, address} = parent_protocol(myaddress, listen)
-    names[address] = recipients['parent'] = { name: 'parent', notify, address, make: message_maker(myaddress) }
-    notify(recipients['parent'].make({ to: address, type: 'ready', refs: {} }))
-
-    function make_protocol (name) {
-        return function protocol (address, notify) {
-            names[address] = recipients[name] = { name, address, notify, make: message_maker(myaddress) }
-            return { notify: listen, address: myaddress }
-        }
-    }
-
+    const contacts = protocol_maker('range-slider', listen, initial_contacts)
+    const { notify, make, address } = contacts.by_name['parent']
+    
+    notify(make({ to: address, type: 'ready', refs: {} }))
     function listen (msg) {
         const { head, refs, type, data, meta } = msg // listen to msg
-        inbox[head.join('/')] = msg                  // store msg
         const [from, to, msg_id] = head
-        const name = names[from].name
-        if (names[from].name.includes('input')) {
-            if (type === 'onchange') { update_range_slider(data.value) }
-        }
+        const { make, notify, name } = contacts.by_address[from]
+        if (type === 'onchange') update_range_slider(data.value)
         if (type === 'help') {
-            const { notify: name_notify, make: name_make, address: name_address } = recipients[name]
-            name_notify(name_make({ to: name_address, type: 'help', data: { state }, refs: { cause: head }}))
+            notify(make({ to: from, type: 'help', data: { state }, refs: { cause: head }}))
         }
     }
 // ---------------------------------------------
-
+    state.contacts = contacts // @TODO: maybe change this here
     let currentValue = value
-    const input_name = `input-${count++}`
+    const input_name = unit
     let input = input_number({ value:currentValue, min, max, step: 1, 
         theme: { 
             props: {
@@ -2255,7 +1685,7 @@ function range_slider({ info, range: { min, max }, label, value = 0, theme = {} 
                 "--size": "0.9rem",
                 "--width": "90%"
             },
-    } }, make_protocol(input_name))
+    } }, contacts.add(input_name))
     
     let fill = document.createElement('span')
     fill.setAttribute('class', 'fill')
@@ -2285,7 +1715,7 @@ function range_slider({ info, range: { min, max }, label, value = 0, theme = {} 
             <label for=${label} class="label">${label}</label>
             <div class="input-form">
                 ${input}
-                <span class="unit">${label.toLowerCase() === 'cpu' ? ' %' : label.toLowerCase() === 'ram' ? ' GB' : ' MB'}</span>
+                <span class="unit">${unit}</span>
             </div>
             <span class="info">${info}</span>
         </div>
@@ -2330,9 +1760,9 @@ function range_slider({ info, range: { min, max }, label, value = 0, theme = {} 
         currentValue = value
         sliderRange.value = value
         setBar(value)
-        const { make } = recipients['parent']
+        const { make } = contacts.by_name['parent']
         notify(make({ to: address, type: 'changed', data: { value: currentValue } }))
-        const { notify: input_notify, address: input_address, make: input_make } = recipients[input_name]
+        const { notify: input_notify, address: input_address, make: input_make } = contacts.by_name[input_name]
         input_notify(input_make({ to: input_address, type: 'onchange', data: { value: currentValue } }))
     }
     function handleTouchStart (event) {
@@ -2348,9 +1778,9 @@ function range_slider({ info, range: { min, max }, label, value = 0, theme = {} 
         currentValue = val
         input.value = val
         setBar(val)
-        const { make } = recipients['parent']
+        const { make } = contacts.by_name['parent']
         notify(make({ to: address, type: 'changed', data: { value: currentValue } }))
-        const { notify: input_notify, address: input_address, make: input_make } = recipients[input_name]
+        const { notify: input_notify, address: input_address, make: input_make } = contacts.by_name[input_name]
         input_notify(input_make({ to: input_address, type: 'onchange', data: { value: currentValue } }))
     }
     function handleChange (event) {
@@ -2358,9 +1788,9 @@ function range_slider({ info, range: { min, max }, label, value = 0, theme = {} 
         currentValue = Number(event.target.value)
         sliderRange.value = currentValue
         setBar(currentValue)
-        const { make } = recipients['parent']
+        const { make } = contacts.by_name['parent']
         notify(make({ to: address, type: 'changed', data: { currentValue } }))
-        const { notify: input_notify, address: input_address, make: input_make } = recipients[input_name]
+        const { notify: input_notify, address: input_address, make: input_make } = contacts.by_name[input_name]
         input_notify(input_make({ to: input_address, type: 'onchange', data: { value: currentValue } }))
     }
     
@@ -2512,8 +1942,7 @@ function range_slider({ info, range: { min, max }, label, value = 0, theme = {} 
     style_sheet(shadow, state.style)
     return el
 }
-}).call(this)}).call(this,"/src/index.js")
-},{"bel":3,"datdot-ui-input-number":23,"message-maker":25,"path":29,"support-style-sheet":33}],32:[function(require,module,exports){
+},{"bel":3,"datdot-ui-input-number":23,"protocol-maker":26,"support-style-sheet":32}],31:[function(require,module,exports){
 module.exports = { getcpu, getram, getbandwidth }
 
 function getcpu () {
@@ -2529,6 +1958,6 @@ function getbandwidth() {
 }
 
 
-},{}],33:[function(require,module,exports){
+},{}],32:[function(require,module,exports){
 arguments[4][24][0].apply(exports,arguments)
 },{"dup":24}]},{},[1]);

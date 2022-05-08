@@ -1,8 +1,6 @@
 const bel = require('bel')
 const style_sheet = require('support-style-sheet')
-const path = require('path')
-const filename = path.basename(__filename)
-const message_maker = require('message-maker')
+const protocol_maker = require('protocol-maker')
 const input_number = require('datdot-ui-input-number')
 
 var id = 0
@@ -16,55 +14,52 @@ const default_theme = {
     style: ``,
     theme: {}
 }
-range_slider.help = () => { return { opts: { info: '32GB', range: { min: 0, max: 32}, label: 'GB', value: 0, theme: default_theme } } }
 
-function range_slider({ info, range: { min, max }, label, value = 0, theme = {} }, parent_protocol) {
+// help for module
+range_slider.help = () => { 
+    return { 
+        opts: { info: '32GB', range: { min: 0, max: 32}, label: 'RAM', unit: 'GB', value: 0, theme: default_theme },
+        dependencies: {
+            'input_number':  { opts: input_number.help().opts }
+        }
+
+    } 
+}
+
+function range_slider(opts, parent_wire) {
+    const { info = '', range: { min = 0, max = 100 }, label = '', unit = '', value = 0, theme = {} } = opts
     const state = {
         opts: {
             info,
             range: { min, max },
             label,
+            unit,
             value,
             theme
         },
-        style: ``
+        style: ``,
+        recipients: {}
     }
 // ---------------------------------------------
-    const myaddress = `${__filename}-${id++}`
-    const inbox = {}
-    const outbox = {}
-    const recipients = {}
-    const names = {}
-    const message_id = to => (outbox[to] = 1 + (outbox[to]||0))
+    const initial_contacts = { 'parent': parent_wire }
 
-    const {notify, address} = parent_protocol(myaddress, listen)
-    names[address] = recipients['parent'] = { name: 'parent', notify, address, make: message_maker(myaddress) }
-    notify(recipients['parent'].make({ to: address, type: 'ready', refs: {} }))
-
-    function make_protocol (name) {
-        return function protocol (address, notify) {
-            names[address] = recipients[name] = { name, address, notify, make: message_maker(myaddress) }
-            return { notify: listen, address: myaddress }
-        }
-    }
-
+    const contacts = protocol_maker('range-slider', listen, initial_contacts)
+    const { notify, make, address } = contacts.by_name['parent']
+    
+    notify(make({ to: address, type: 'ready', refs: {} }))
     function listen (msg) {
         const { head, refs, type, data, meta } = msg // listen to msg
-        inbox[head.join('/')] = msg                  // store msg
         const [from, to, msg_id] = head
-        const name = names[from].name
-        if (names[from].name.includes('input')) {
-            if (type === 'onchange') { update_range_slider(data.value) }
-        }
+        const { make, notify, name } = contacts.by_address[from]
+        if (type === 'onchange') update_range_slider(data.value)
         if (type === 'help') {
-            const { notify: name_notify, make: name_make, address: name_address } = recipients[name]
-            name_notify(name_make({ to: name_address, type: 'help', data: { state }, refs: { cause: head }}))
+            notify(make({ to: from, type: 'help', data: { state }, refs: { cause: head }}))
         }
     }
 // ---------------------------------------------
-
+    state.contacts = contacts // @TODO: maybe change this here
     let currentValue = value
-    const input_name = `input-${count++}`
+    const input_name = unit
     let input = input_number({ value:currentValue, min, max, step: 1, 
         theme: { 
             props: {
@@ -76,7 +71,7 @@ function range_slider({ info, range: { min, max }, label, value = 0, theme = {} 
                 "--size": "0.9rem",
                 "--width": "90%"
             },
-    } }, make_protocol(input_name))
+    } }, contacts.add(input_name))
     
     let fill = document.createElement('span')
     fill.setAttribute('class', 'fill')
@@ -106,7 +101,7 @@ function range_slider({ info, range: { min, max }, label, value = 0, theme = {} 
             <label for=${label} class="label">${label}</label>
             <div class="input-form">
                 ${input}
-                <span class="unit">${label.toLowerCase() === 'cpu' ? ' %' : label.toLowerCase() === 'ram' ? ' GB' : ' MB'}</span>
+                <span class="unit">${unit}</span>
             </div>
             <span class="info">${info}</span>
         </div>
@@ -151,9 +146,9 @@ function range_slider({ info, range: { min, max }, label, value = 0, theme = {} 
         currentValue = value
         sliderRange.value = value
         setBar(value)
-        const { make } = recipients['parent']
+        const { make } = contacts.by_name['parent']
         notify(make({ to: address, type: 'changed', data: { value: currentValue } }))
-        const { notify: input_notify, address: input_address, make: input_make } = recipients[input_name]
+        const { notify: input_notify, address: input_address, make: input_make } = contacts.by_name[input_name]
         input_notify(input_make({ to: input_address, type: 'onchange', data: { value: currentValue } }))
     }
     function handleTouchStart (event) {
@@ -169,9 +164,9 @@ function range_slider({ info, range: { min, max }, label, value = 0, theme = {} 
         currentValue = val
         input.value = val
         setBar(val)
-        const { make } = recipients['parent']
+        const { make } = contacts.by_name['parent']
         notify(make({ to: address, type: 'changed', data: { value: currentValue } }))
-        const { notify: input_notify, address: input_address, make: input_make } = recipients[input_name]
+        const { notify: input_notify, address: input_address, make: input_make } = contacts.by_name[input_name]
         input_notify(input_make({ to: input_address, type: 'onchange', data: { value: currentValue } }))
     }
     function handleChange (event) {
@@ -179,9 +174,9 @@ function range_slider({ info, range: { min, max }, label, value = 0, theme = {} 
         currentValue = Number(event.target.value)
         sliderRange.value = currentValue
         setBar(currentValue)
-        const { make } = recipients['parent']
+        const { make } = contacts.by_name['parent']
         notify(make({ to: address, type: 'changed', data: { currentValue } }))
-        const { notify: input_notify, address: input_address, make: input_make } = recipients[input_name]
+        const { notify: input_notify, address: input_address, make: input_make } = contacts.by_name[input_name]
         input_notify(input_make({ to: input_address, type: 'onchange', data: { value: currentValue } }))
     }
     
